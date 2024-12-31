@@ -1,0 +1,57 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<base xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema" type="module_sound">
+  <module_sounds>
+    <!--
+  sound_categories are:
+	mission_ambient_bed
+	mission_ambient_3d_big
+	mission_ambient_3d_medium
+	mission_ambient_3d_small
+	mission_material_impact
+	mission_combat_trivial
+	mission_combat
+	mission_foley
+	mission_voice_shout
+	mission_voice
+	mission_voice_trivial
+	mission_siege_loud
+	mission_footstep
+	mission_footstep_run
+	mission_horse_gallop
+	mission_horse_walk
+	ui
+	alert
+	campaign_node
+	campaign_bed
+	
+	- Sounds that dont have valid categories wont be played!
+	
+	example:
+		int soundIndex = SoundEvent.GetEventIdFromString("example/voice/charge");//to avoid string operations in runtime soundIndex can be cached.
+		if (playOneshot)
+		{
+			MakeSound(soundIndex, MainAgent.Position, false, true, -1, -1);//plays oneshot sound at position with given parameters.
+		}
+		else
+		{
+			SoundEvent eventRef = SoundEvent.CreateEvent(soundIndex, Scene);//get a reference to sound and update parameters later.
+			eventRef.SetPosition(MainAgent.Position);
+			eventRef.Play();
+		}
+  -->
+
+    <!--music-->
+    <!--<module_sound name="west_bretonnia" sound_category="music" path="../../TOR_Armory/ModuleSounds/west_bretonnia.ogg" />-->
+    
+    <!--sound effects-->
+
+    <module_sound name="mortar_shot_1" sound_category="mission_combat" path="../ModuleSounds/Artillery/Mortar_Muzzlefire_1.ogg" />
+    <module_sound name="mortar_shot_2" sound_category="mission_combat" path="../ModuleSounds/Artillery/Mortar_Muzzlefire_2.ogg" />
+    <module_sound name="mortar_traveling" sound_category="mission_foley" path="../ModuleSounds/Artillery/Projectile_traveling.ogg" />
+    <module_sound name="mortar_explosion_1" sound_category="mission_combat" path="../ModuleSounds/Artillery/Mortar_Explosion_1.ogg" />
+    <module_sound name="mortar_explosion_2" sound_category="mission_combat" path="../ModuleSounds/Artillery/Mortar_Explosion_2.ogg" />
+    <module_sound name="mortar_explosion_3" sound_category="mission_foley" path="../ModuleSounds/Artillery/Projectile_traveling.ogg" />
+
+  </module_sounds>
+</base>
