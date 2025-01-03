@@ -256,9 +256,7 @@ namespace TOR_Core.AbilitySystem
                         if (Input.IsKeyPressed(InputKey.LeftMouseButton))
                         {
                             bool flag = _abilityComponent.CurrentAbility.Crosshair == null ||
-                                        !_abilityComponent.CurrentAbility.Crosshair.IsVisible ||
-                                        (_abilityComponent.CurrentAbility.Crosshair.CrosshairType == CrosshairType.SingleTarget &&
-                                         !((SingleTargetCrosshair)_abilityComponent.CurrentAbility.Crosshair).IsTargetLocked);
+                                        !_abilityComponent.CurrentAbility.Crosshair.IsVisible;
                             if (!flag)
                             {
                                 if (!Agent.Main.TryCastCurrentAbility(out TextObject failureReason))

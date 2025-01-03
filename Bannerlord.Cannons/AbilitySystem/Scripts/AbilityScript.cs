@@ -35,7 +35,6 @@ namespace TOR_Core.AbilitySystem.Scripts
                 else return new MBReadOnlyList<Agent>(_targetAgents);
             }
         }
-        public Ability Ability => _ability;
         public bool IsFading { get; private set; }
 
         public void SetCasterAgent(Agent agent) => _casterAgent = agent;

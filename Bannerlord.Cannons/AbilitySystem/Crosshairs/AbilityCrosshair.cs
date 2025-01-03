@@ -14,12 +14,6 @@ namespace TOR_Core.AbilitySystem.Crosshairs
     /// </summary>
     public abstract class AbilityCrosshair : IDisposable, ICrosshair
     {
-        public AbilityCrosshair(AbilityTemplate template)
-        {
-            _template = template;
-            CrosshairType = template.CrosshairType;
-        }
-
         /// <summary>
         /// Method that executes every time the mission screen ticks
         /// </summary>
@@ -53,9 +47,9 @@ namespace TOR_Core.AbilitySystem.Crosshairs
             {
                 for (Int32 num = 0; num < amount; num++)
                 {
-                    var light = Light.CreatePointLight(_template.TargetCapturingRadius);
+                    var light = Light.CreatePointLight(_targetCapturingRadius);
                     light.Intensity = 1000;
-                    light.Radius = _template.TargetCapturingRadius * 2;
+                    light.Radius = _targetCapturingRadius * 2;
                     light.SetShadowType(Light.ShadowType.DynamicShadow);
                     //light.SetVolumetricProperties(true, 1f);
                     light.SetVisibility(true);
@@ -179,7 +173,7 @@ namespace TOR_Core.AbilitySystem.Crosshairs
             {
                 MatrixFrame frame = _crosshair.GetFrame();
                 frame.rotation = value;
-                frame.Scale(new Vec3(_template.TargetCapturingRadius * 2, _template.TargetCapturingRadius * 2, 1, -1));
+                frame.Scale(new Vec3(_targetCapturingRadius * 2, _targetCapturingRadius * 2, 1, -1));
                 _crosshair.SetFrame(ref frame);
             }
         }
@@ -192,8 +186,6 @@ namespace TOR_Core.AbilitySystem.Crosshairs
                 _crosshair.SetFrame(ref value);
             }
         }
-
-        public CrosshairType CrosshairType { get; }
 
         protected Int32 _currentIndex;
 
@@ -209,14 +201,14 @@ namespace TOR_Core.AbilitySystem.Crosshairs
 
         protected MatrixFrame _currentFrame;
 
-        protected AbilityTemplate _template;
-
         protected GameEntity _crosshair = GameEntity.CreateEmpty(Mission.Current.Scene);
 
         protected Mission _mission = Mission.Current;
 
         protected MissionScreen _missionScreen = ScreenManager.TopScreen as MissionScreen;
 
-        protected Agent _caster = Agent.Main; 
+        protected Agent _caster = Agent.Main;
+
+        protected float _targetCapturingRadius;
     }
 }

@@ -12,8 +12,6 @@ namespace TOR_Core.AbilitySystem
         private Ability _currentAbility = null;
         private readonly List<Ability> _knownAbilitySystem = new List<Ability>();
         public bool LastCastWasQuickCast;
-        public delegate void CurrentAbilityChangedHandler(AbilityCrosshair crosshair);
-        public event CurrentAbilityChangedHandler CurrentAbilityChanged;
         public List<Ability> KnownAbilitySystem { get => _knownAbilitySystem; }
         
 
@@ -133,7 +131,6 @@ namespace TOR_Core.AbilitySystem
             set
             {
                 _currentAbility = value;
-                CurrentAbilityChanged?.Invoke(_currentAbility.Crosshair);
             }
         }
     }

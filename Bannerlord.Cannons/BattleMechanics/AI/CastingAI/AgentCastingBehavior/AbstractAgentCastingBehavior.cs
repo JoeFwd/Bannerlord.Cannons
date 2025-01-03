@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 using TOR_Core.AbilitySystem;
 using TOR_Core.BattleMechanics.AI.CastingAI.AgentTacticalBehavior;
@@ -80,7 +79,7 @@ namespace TOR_Core.BattleMechanics.AI.CastingAI.AgentCastingBehavior
                     target.UtilityValue = CalculateUtility(target);
                     return target;
                 })
-                .Select(target => new BehaviorOption {Target = target, Behavior = this, UtilityValue = target.UtilityValue})
+                .Select(target => new BehaviorOption {Target = target, Behavior = this})
                 .ToList();
 
             return LatestScores;

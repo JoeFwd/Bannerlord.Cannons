@@ -79,8 +79,6 @@ namespace TOR_Core.AbilitySystem
         [XmlAttribute]
         public float Offset { get; set; } = 1.0f;
         [XmlAttribute]
-        public CrosshairType CrosshairType { get; set; } = CrosshairType.Self;
-        [XmlAttribute]
         public float MinDistance { get; set; } = 1.0f;
         [XmlAttribute]
         public float MaxDistance { get; set; } = 1.0f;
@@ -162,7 +160,6 @@ namespace TOR_Core.AbilitySystem
                 AnimationActionName = AnimationActionName,
                 AbilityTargetType = AbilityTargetType,
                 Offset = Offset,
-                CrosshairType = CrosshairType,
                 MinDistance = MinDistance,
                 MaxDistance = MaxDistance,
                 TargetCapturingRadius = TargetCapturingRadius,

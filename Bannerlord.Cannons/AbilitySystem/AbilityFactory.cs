@@ -1,8 +1,6 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Xml.Serialization;
-using TaleWorlds.MountAndBlade;
 using TOR_Core.AbilitySystem.Crosshairs;
 using TOR_Core.Utilities;
 
@@ -50,7 +48,7 @@ namespace TOR_Core.AbilitySystem
 
         public static AbilityCrosshair InitializeCrosshair(AbilityTemplate template)
         {
-            return new Pointer(template);
+            return new Pointer();
         }
     }
 }

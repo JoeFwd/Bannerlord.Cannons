@@ -286,10 +286,7 @@ namespace TOR_Core.AbilitySystem
                     
                     
                 }
-                else if (Crosshair.CrosshairType == CrosshairType.SingleTarget)
-                {
-                    AbilityScript.SetExplicitTargetAgents([(Crosshair as SingleTargetCrosshair).CachedTarget]);
-                }
+
             }
         }
 

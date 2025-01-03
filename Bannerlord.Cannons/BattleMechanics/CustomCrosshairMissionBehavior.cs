@@ -1,10 +1,8 @@
-﻿using TOR_Core.AbilitySystem;
+using TOR_Core.AbilitySystem;
 using TOR_Core.AbilitySystem.Crosshairs;
 using TOR_Core.AbilitySystem.CrossHairs;
 using TOR_Core.Extensions;
 using TaleWorlds.Core;
-using TaleWorlds.InputSystem;
-using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 using TaleWorlds.MountAndBlade.View;
 using TaleWorlds.MountAndBlade.View.MissionViews;
@@ -21,8 +19,6 @@ namespace TOR_Core.Battle.CrosshairMissionBehavior
         private AbilityCrosshair _abilityCrosshair;
         private AbilityComponent _abilityComponent;
         private AbilityManagerMissionLogic _missionLogic;
-
-        public ICrosshair CurrentCrosshair { get => _currentCrosshair; }
 
         public override void OnMissionScreenTick(float dt)
         {
@@ -99,7 +95,6 @@ namespace TOR_Core.Battle.CrosshairMissionBehavior
             if (Agent.Main.IsAbilityUser() && (_abilityComponent = Agent.Main.GetComponent<AbilityComponent>()) != null)
             {
                 _missionLogic = Mission.Current.GetMissionBehavior<AbilityManagerMissionLogic>();
-                _abilityComponent.CurrentAbilityChanged += ChangeAbilityCrosshair;
                 _abilityComponent.InitializeCrosshairs();
                 _abilityCrosshair = _abilityComponent.CurrentAbility?.Crosshair;
             }
@@ -117,33 +112,6 @@ namespace TOR_Core.Battle.CrosshairMissionBehavior
             _abilityComponent = null;
             _abilityCrosshair = null;
             _areCrosshairsInitialized = false;
-            if (_abilityComponent != null)
-            {
-                _abilityComponent.CurrentAbilityChanged -= ChangeAbilityCrosshair;
-            }
-        }
-
-        private bool CanUseSniperScope()
-        {
-            return Mission.CameraIsFirstPerson &&
-                   Input.IsKeyDown(InputKey.LeftShift) &&
-                   Input.IsKeyDown(InputKey.LeftMouseButton) &&
-                   Agent.Main.GetCurrentActionType(1) == Agent.ActionCodeType.ReadyRanged &&
-                   Agent.Main.WieldedWeapon.Item.StringId.Contains("longrifle") &&
-                   IsRightAngleToShoot();
-        }
-
-        private void ChangeAbilityCrosshair(AbilityCrosshair crosshair)
-        {
-            _abilityCrosshair?.Hide();
-            _abilityCrosshair = crosshair;
-        }
-
-        private bool IsRightAngleToShoot()
-        {
-            float numberToCheck = MBMath.WrapAngle(Agent.Main.LookDirection.AsVec2.RotationInRadians - Agent.Main.GetMovementDirection().RotationInRadians);
-            Vec2 bodyRotationConstraint = Agent.Main.GetBodyRotationConstraint(1);
-            return !(Mission.Current.MainAgent.MountAgent != null && !MBMath.IsBetween(numberToCheck, bodyRotationConstraint.x, bodyRotationConstraint.y) && (bodyRotationConstraint.x < -0.1f || bodyRotationConstraint.y > 0.1f));
         }
     }
 }

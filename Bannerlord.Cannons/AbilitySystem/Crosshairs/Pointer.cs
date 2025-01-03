@@ -6,16 +6,20 @@ namespace TOR_Core.AbilitySystem.Crosshairs
 {
     public class Pointer : AbilityCrosshair
     {
-        public Pointer(AbilityTemplate template) : base(template)
+        private const float TargetCapturingRadius = 2.5f;
+        private const int MaxDistance = 30;
+        
+        public Pointer()
         {
             _crosshair = GameEntity.Instantiate(Mission.Current.Scene, "circular_targeting_rune", false);
             _crosshair.EntityFlags |= EntityFlags.NotAffectedBySeason;
             MatrixFrame frame = _crosshair.GetFrame();
-            frame.Scale(new Vec3(template.TargetCapturingRadius, template.TargetCapturingRadius, 1, -1));
+            frame.Scale(new Vec3(TargetCapturingRadius, TargetCapturingRadius, 1, -1));
             _crosshair.SetFrame(ref frame);
             InitializeColors();
             AddLight();
             IsVisible = false;
+            _targetCapturingRadius = TargetCapturingRadius;
         }
 
         public override void Tick()
@@ -32,9 +36,9 @@ namespace TOR_Core.AbilitySystem.Crosshairs
                 if (_missionScreen.GetProjectedMousePositionOnGround(out _position, out _normal, BodyFlags.CommonFocusRayCastExcludeFlags, true))
                 {
                     _currentDistance = _caster.Position.Distance(_position);
-                    if (_currentDistance > _template.MaxDistance)
+                    if (_currentDistance > MaxDistance)
                     {
-                        _position = _caster.LookFrame.Advance(_template.MaxDistance).origin;
+                        _position = _caster.LookFrame.Advance(MaxDistance).origin;
                         _position.z = _mission.Scene.GetGroundHeightAtPosition(Position);
                     }
                     Position = _position;
@@ -44,7 +48,7 @@ namespace TOR_Core.AbilitySystem.Crosshairs
                 }
                 else
                 {
-                    _position = _caster.LookFrame.Advance(_template.MaxDistance).origin;
+                    _position = _caster.LookFrame.Advance(MaxDistance).origin;
                     _position.z = _mission.Scene.GetGroundHeightAtPosition(Position);
                     Position = _position; 
                 }

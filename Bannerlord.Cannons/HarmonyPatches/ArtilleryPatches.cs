@@ -10,7 +10,7 @@ namespace TOR_Core.HarmonyPatches
     [HarmonyPatch]
     public class ArtilleryPatches
     {
-        private static  readonly ILogger Logger = new ConsoleLoggerFactory().CreateLogger<ArtilleryPatches>();
+        private static readonly ILogger Logger = new ConsoleLoggerFactory().CreateLogger<ArtilleryPatches>();
         
         [HarmonyPrefix]
         [HarmonyPatch(typeof(RangedSiegeWeapon), "ShootProjectileAux")]
