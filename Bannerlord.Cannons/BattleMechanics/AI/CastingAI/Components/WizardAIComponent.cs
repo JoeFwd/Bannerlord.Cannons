@@ -13,7 +13,7 @@ namespace TOR_Core.BattleMechanics.AI.CastingAI.Components
         private static readonly float EvalInterval = 3;
         private float _dtSinceLastOccasional = (float) Rand.NextDouble() * EvalInterval; //Randomly distribute ticks
 
-        public AbstractAgentCastingBehavior CurrentCastingBehavior;
+        public AbstractAgentCastingBehavior? CurrentCastingBehavior;
 
         private List<IAgentBehavior> _availableCastingBehaviors; //Do not access this directly. Use the generator function public method below.
         public List<IAgentBehavior> AvailableCastingBehaviors => _availableCastingBehaviors ?? (_availableCastingBehaviors = new List<IAgentBehavior>(AgentCastingBehaviorConfiguration.PrepareCastingBehaviors(Agent)));
@@ -51,9 +51,11 @@ namespace TOR_Core.BattleMechanics.AI.CastingAI.Components
             CurrentCastingBehavior = DetermineBehavior(AvailableCastingBehaviors, CurrentCastingBehavior);
         }
 
-        private AbstractAgentCastingBehavior DetermineBehavior(List<IAgentBehavior> availableCastingBehaviors, AbstractAgentCastingBehavior current)
+        private static AbstractAgentCastingBehavior? DetermineBehavior(List<IAgentBehavior> availableCastingBehaviors, AbstractAgentCastingBehavior? current)
         {
             var option = DecisionManager.EvaluateCastingBehaviors(availableCastingBehaviors);
+
+            if (option is null) return null;
             if (option.Behavior != current)
             {
                 current?.Terminate();

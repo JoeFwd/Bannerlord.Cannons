@@ -35,15 +35,15 @@ namespace TOR_Core.AbilitySystem
         [XmlAttribute]
         public float Radius { get; set; } = 0.8f;
         [XmlAttribute]
-        public AbilityType AbilityType { get; set; } = AbilityType.Spell;
+        public AbilityType AbilityType { get; set; } = AbilityType.ItemBound;
         [XmlAttribute]
-        public AbilityEffectType AbilityEffectType { get; set; } = AbilityEffectType.Missile;
+        public AbilityEffectType AbilityEffectType { get; set; } = AbilityEffectType.ArtilleryPlacement;
         [XmlAttribute]
         public float BaseMovementSpeed { get; set; } = 35f;
         [XmlAttribute]
         public float TickInterval { get; set; } = 1f;
         [XmlAttribute]
-        public TriggerType TriggerType { get; set; } = TriggerType.OnCollision;
+        public TriggerType TriggerType { get; set; } = TriggerType.TickOnce;
         [XmlElement("TriggeredEffect")]
         public List<string> TriggeredEffects { get; set; } = new List<string>();
         [XmlAttribute]
@@ -105,26 +105,6 @@ namespace TOR_Core.AbilitySystem
         [XmlIgnore] 
         public float ScaleVariable1 { get; set; } = 0f;
         public float VisualsRotationVelocity { get; set; } = 0f;
-        
-        [XmlIgnore]
-        public bool IsSpell => AbilityType == AbilityType.Spell;
-        [XmlIgnore]
-        public int GoldCost
-        {
-            get
-            {
-                switch (SpellTier)
-                {
-                    case 1: return 5000;
-                    case 2: return 10000;
-                    case 3: return 25000;
-                    case 4: return 50000;
-                    default: return 0;
-                }
-            }
-        }
-
-       
         
         public AbilityTemplate() { }
         public AbilityTemplate(string id) => StringID = id;

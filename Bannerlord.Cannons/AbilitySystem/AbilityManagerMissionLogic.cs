@@ -17,6 +17,8 @@ namespace TOR_Core.AbilitySystem
 {
     public class AbilityManagerMissionLogic : MissionLogic
     {
+        private const int MaxPlaceableCannons = 10;
+        
         private bool _shouldSheathWeapon;
         private bool _shouldWieldWeapon;
         private bool _shouldPlayIdleCastStanceAnim;
@@ -353,7 +355,7 @@ namespace TOR_Core.AbilitySystem
                 {
                     if (agent.CanPlaceArtillery() || agent.IsHero && agent.IsEngineerCompanion())
                     {
-                        _artillerySlots[team] += agent.GetPlaceableArtilleryCount();
+                        _artillerySlots[team] += MaxPlaceableCannons;
                     }
                 }
             }

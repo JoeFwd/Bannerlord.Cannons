@@ -132,16 +132,6 @@ namespace TOR_Core.AbilitySystem
             {
                 ActivateAbility(casterAgent);
             }
-            else if (Template.CastType == CastType.WindUp)
-            {
-                IsCasting = true;
-                var timer = new Timer(Template.CastTime * 1000)
-                {
-                    AutoReset = false
-                };
-                timer.Elapsed += (s, e) => { IsActivationPending = true; };
-                timer.Start();
-            }
         }
 
         public void SetCoolDown(int cooldownTime)
@@ -154,7 +144,6 @@ namespace TOR_Core.AbilitySystem
         public virtual void DeactivateAbility()
         {
             _isLocked = true;
-            AbilityScript?.Stop();
         }
         public virtual void ActivateAbility(Agent casterAgent)
         {
@@ -177,27 +166,8 @@ namespace TOR_Core.AbilitySystem
 
             AddLight(ref parentEntity);
 
-            if (ShouldAddPhyics())
-                AddPhysics(ref parentEntity);
-
             AddBehaviour(ref parentEntity, casterAgent);
             OnCastComplete?.Invoke(this);
-        }
-
-        private bool IsGroundAbility()
-        {
-            return Template.AbilityTargetType == AbilityTargetType.GroundAtPosition;
-        }
-
-        private bool IsMissileAbility()
-        {
-            return Template.AbilityEffectType == AbilityEffectType.SeekerMissile ||
-                   Template.AbilityEffectType == AbilityEffectType.Missile;
-        }
-
-        private bool ShouldAddPhyics()
-        {
-            return Template.TriggerType == TriggerType.OnCollision;
         }
 
         protected MatrixFrame GetSpawnFrame(Agent casterAgent)
@@ -220,101 +190,9 @@ namespace TOR_Core.AbilitySystem
             var frame = casterAgent.LookFrame;
             switch (AbilityEffectType)
             {
-                case AbilityEffectType.Missile:
-                case AbilityEffectType.SeekerMissile:
-                    {
-                        frame.origin = casterAgent.GetEyeGlobalPosition();
-                        break;
-                    }
-                // Quick cast setup
-                case AbilityEffectType.Augment:
-                    frame.origin = Agent.Main.GetWorldPosition().GetGroundVec3MT();
-                    break;
                 case AbilityEffectType.ArtilleryPlacement:
-                case AbilityEffectType.Summoning:
                     frame.origin =
                         Mission.Current.GetRandomPositionAroundPoint(Agent.Main.GetWorldPosition().GetGroundVec3MT(), 3, 6, false);
-                    break;
-                case AbilityEffectType.Heal when IsGroundAbility():
-                    frame.origin = Agent.Main.GetWorldPosition().GetGroundVec3MT();
-                    break;
-                case AbilityEffectType.Heal:
-                    {
-                        float height = 0.0f;
-                        var pos = Agent.Main.LookFrame.Advance(15).origin;
-                        Mission.Current.Scene.GetHeightAtPoint(pos.AsVec2, BodyFlags.CommonCollisionExcludeFlagsForCombat, ref height);
-                        pos.z = height;
-
-                        var targetAgent = Mission.Current.GetClosestAllyAgent(Agent.Main.Team, pos, 5);
-
-                        if (targetAgent != null)
-                        {
-                            frame.origin = targetAgent.Frame.origin;
-                        }
-                        else
-                        {
-                            targetAgent = Agent.Main;
-                            frame.origin = targetAgent.Frame.origin;
-                        }
-                        break;
-                    }
-                case AbilityEffectType.Hex:
-                    {
-                        var height = 0.0f;
-                        var pos = Agent.Main.LookFrame.Advance(15).origin;
-                        Mission.Current.Scene.GetHeightAtPoint(pos.AsVec2, BodyFlags.CommonCollisionExcludeFlagsForCombat, ref height);
-                        pos.z = height;
-
-                        MBList<Agent> targets = [];
-                        targets = Mission.Current.GetNearbyAgents(pos.AsVec2, 5, targets);
-
-                        foreach (var agent in targets)
-                        {
-                            if (agent.Team != Mission.Current.Teams.PlayerEnemy) continue;
-                            frame.origin = agent.Frame.origin;
-                            break;
-                        }
-
-                        break;
-                    }
-                case AbilityEffectType.Bombardment:
-                case AbilityEffectType.Vortex:
-                    {
-                        float height = 0.0f;
-                        var pos = Agent.Main.LookFrame.Advance(15).origin;
-                        Mission.Current.Scene.GetHeightAtPoint(pos.AsVec2, BodyFlags.CommonCollisionExcludeFlagsForCombat, ref height);
-
-                        if (this.AbilityEffectType == AbilityEffectType.Bombardment)
-                            pos.z = height + this.Template.Offset;
-                        else
-                            pos.z = height;
-
-                        frame.origin = pos;
-                        frame.rotation = Agent.Main.LookFrame.rotation;
-
-                        break;
-                    }
-                case AbilityEffectType.Blast:
-                case AbilityEffectType.Wind:
-                    {
-                        var height = 0.0f;
-                        Vec3 pos;
-                        pos = this.AbilityEffectType == AbilityEffectType.Wind ? Agent.Main.LookFrame.Advance(5).origin : Agent.Main.LookFrame.Advance(3).origin;
-
-                        Mission.Current.Scene.GetHeightAtPoint(pos.AsVec2, BodyFlags.CommonCollisionExcludeFlagsForCombat, ref height);
-                        if (this.AbilityEffectType == AbilityEffectType.Blast)
-                            pos.z = height + 1;
-                        else
-                            pos.z = height;
-                        frame.origin = pos;
-                        frame.rotation = Agent.Main.LookFrame.rotation;
-                        break;
-                    }
-                case AbilityEffectType.CareerAbilityEffect:
-                    frame.origin = Agent.Main.GetChestGlobalPosition();
-                    frame.rotation = Agent.Main.LookFrame.rotation;
-                    break;
-                default:
                     break;
             }
 
@@ -326,55 +204,11 @@ namespace TOR_Core.AbilitySystem
             var frame = casterAgent.LookFrame;
             switch (Template.AbilityEffectType)
             {
-                case AbilityEffectType.Missile:
-                case AbilityEffectType.SeekerMissile:
-                    {
-                        frame.origin = casterAgent.GetEyeGlobalPosition();
-                        break;
-                    }
-                case AbilityEffectType.Wind:
-                    {
-                        frame = Crosshair.Frame;
-                        break;
-                    }
-                case AbilityEffectType.Blast:
-                    {
-                        frame = Crosshair.Frame.Elevate(1);
-                        break;
-                    }
-                case AbilityEffectType.Vortex:
-                    {
-                        frame = Crosshair.Frame;
-                        frame.rotation = casterAgent.Frame.rotation;
-                        break;
-                    }
-                case AbilityEffectType.CareerAbilityEffect:
-                    {
-                        frame.origin = casterAgent.GetChestGlobalPosition();
-                        frame.rotation = casterAgent.LookFrame.rotation;
-                        if (this.IsGroundAbility())
-                        {
-                            frame = new MatrixFrame(Mat3.Identity, Crosshair.Position);
-                        }
-                        break;
-                    }
                 case AbilityEffectType.ArtilleryPlacement:
-                case AbilityEffectType.Hex:
-                case AbilityEffectType.Augment:
-                case AbilityEffectType.Heal:
-                case AbilityEffectType.Summoning:
                     {
                         frame = new MatrixFrame(Mat3.Identity, Crosshair.Position);
                         break;
                     }
-                case AbilityEffectType.Bombardment:
-                    {
-                        frame = new MatrixFrame(Mat3.Identity, Crosshair.Position);
-                        frame.origin.z += Template.Offset;
-                        break;
-                    }
-                default:
-                    break;
             }
 
             return frame;
@@ -388,59 +222,12 @@ namespace TOR_Core.AbilitySystem
 
             switch (Template.AbilityEffectType)
             {
-                case AbilityEffectType.Missile:
-                case AbilityEffectType.SeekerMissile:
-                    {
-                        frame = frame.Elevate(casterAgent.GetEyeGlobalHeight()).Advance(Template.Offset);
-                        frame.rotation = wizardAIComponent.CurrentCastingBehavior.CalculateSpellRotation(target.GetPositionPrioritizeCalculated(), frame.origin);
-                        break;
-                    }
-                case AbilityEffectType.Blast:
-                    {
-                        frame = new MatrixFrame(frame.rotation, target.GetPositionPrioritizeCalculated()).Advance(-Template.Offset).Elevate(1);
-                        break;
-                    }
-                case AbilityEffectType.Wind:
-                case AbilityEffectType.Vortex:
-                    {
-                        frame = new MatrixFrame(Mat3.Identity, target.GetPositionPrioritizeCalculated())
-                        {
-                            rotation = casterAgent.Frame.rotation
-                        };
-                        break;
-                    }
-                case AbilityEffectType.CareerAbilityEffect:
-                    {
-                        frame.origin = casterAgent.GetChestGlobalPosition();
-                        frame.rotation = casterAgent.LookFrame.rotation;
-                        break;
-                    }
                 case AbilityEffectType.ArtilleryPlacement:
                     {
                         frame = new MatrixFrame(Mat3.Identity, target.GetPositionPrioritizeCalculated());
                         target.SelectedWorldPosition = Vec3.Zero;
                         break;
                     }
-                case AbilityEffectType.Hex:
-                case AbilityEffectType.Augment:
-                case AbilityEffectType.Heal:
-                case AbilityEffectType.Summoning:
-                case AbilityEffectType.Bombardment:
-                    {
-                        frame = new MatrixFrame(Mat3.Identity, target.GetPositionPrioritizeCalculated());
-                        break;
-                    }
-                default:
-                    break;
-            }
-
-            if (IsGroundAbility())
-            {
-                frame.origin.z = Mission.Current.Scene.GetGroundHeightAtPosition(frame.origin);
-                if (Template.AbilityEffectType == AbilityEffectType.Bombardment)
-                {
-                    frame.origin.z += Template.Offset;
-                }
             }
 
             return frame;
@@ -478,17 +265,6 @@ namespace TOR_Core.AbilitySystem
             }
         }
 
-        private void AddPhysics(ref GameEntity entity)
-        {
-            using(new TWSharedMutexWriteLock(Scene.PhysicsAndRayCastLock))
-            {
-                var mass = 1;
-                entity.AddSphereAsBody(Vec3.Zero, Template.Radius, BodyFlags.Dynamic);
-                entity.AddPhysics(mass, entity.CenterOfMass, entity.GetBodyShape(), Vec3.Zero, Vec3.Zero, PhysicsMaterial.GetFromName("missile"), false, 1);
-                entity.SetPhysicsState(true, false);
-            }
-        }
-
         protected void AddBehaviour(ref GameEntity entity, Agent casterAgent)
         {
             switch (Template.AbilityEffectType)
@@ -502,9 +278,13 @@ namespace TOR_Core.AbilitySystem
             {
                 if (casterAgent.IsAIControlled)
                 {
-                    var wizardAIComponent = casterAgent.GetComponent<WizardAIComponent>();
-                    var target = wizardAIComponent.CurrentCastingBehavior.CurrentTarget;
-                    AbilityScript.SetExplicitTargetAgents([target.Agent]);
+                    var wizardAiComponent = casterAgent.GetComponent<WizardAIComponent>();
+                    if (wizardAiComponent.CurrentCastingBehavior?.CurrentTarget is not null)
+                    {
+                        AbilityScript.SetExplicitTargetAgents([wizardAiComponent.CurrentCastingBehavior?.CurrentTarget.Agent]);    
+                    }
+                    
+                    
                 }
                 else if (Crosshair.CrosshairType == CrosshairType.SingleTarget)
                 {

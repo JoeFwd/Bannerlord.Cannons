@@ -2,29 +2,12 @@ namespace TOR_Core.AbilitySystem
 {
     public enum AbilityType
     {
-        Innate,
-        Spell,
-        Prayer,
-        ItemBound,
-        CareerAbility
+        ItemBound
     }
 
     public enum AbilityEffectType
     {
-        Projectile,
-        Missile,
-        SeekerMissile,
-        Wind,
-        Vortex,
-        Heal,
-        Augment,
-        Hex,
-        Summoning,
-        Bombardment,
-        Blast,
         ArtilleryPlacement,
-        TimeWarpEffect,
-        CareerAbilityEffect
     }
 
     public enum AbilityTargetType
@@ -41,17 +24,11 @@ namespace TOR_Core.AbilitySystem
     public enum CastType
     {
         Instant,
-        WindUp,
-        Channel
     }
 
     public enum TriggerType
     {
-        EveryTick,
-        OnCollision,
         TickOnce,
-        OnStop,
-        None
     }
 
     //This is for triggeredeffects.

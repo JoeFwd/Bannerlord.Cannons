@@ -9,22 +9,6 @@ namespace TOR_Core.BattleMechanics.AI.CommonAIFunctions
 {
     public static class CommonAIDecisionFunctions
     {
-        public static Func<Target, float> WindsOfMagicRemainingRatio(Agent behaviorAgent)
-        {
-            // TODO: remove Winds of Magic mechnanic
-            return target => 0f;
-        }
-
-        public static Func<Target, float> FormationUnderFire()
-        {
-            return target => { return target.Formation.QuerySystem.UnderRangedAttackRatio; };
-        }
-
-        public static Func<Target, float> FormationCasualties()
-        {
-            return target => target.Formation.QuerySystem.CasualtyRatio;
-        }
-
         public static Func<Target, float> TargetDistanceToHostiles(Team team = null)
         {
             return target =>
@@ -74,41 +58,6 @@ namespace TOR_Core.BattleMechanics.AI.CommonAIFunctions
             return target => target.Formation.QuerySystem.FormationPower;
         }
 
-        public static Func<Target, float> RangedUnitRatio()
-        {
-            return target => target.Formation.QuerySystem.RangedUnitRatio;
-        }
-
-        public static Func<Target, float> InfantryUnitRatio()
-        {
-            return target => target.Formation.QuerySystem.InfantryUnitRatio;
-        }
-
-        public static Func<Target, float> CavalryUnitRatio()
-        {
-            return target => target.Formation.QuerySystem.CavalryUnitRatio;
-        }
-
-        public static Func<Target, float> Dispersedness()
-        {
-            return target => target.Formation.UnitSpacing;
-        }
-
-        public static Func<Target, float> TargetSpeed()
-        {
-            return target => target.Formation.QuerySystem.CurrentVelocity.Length;
-        }
-
-        public static Func<Target, float> BalanceOfPower(Agent agent)
-        {
-            return target => agent.Team.QuerySystem.TeamPower / (CalculateEnemyTotalPower(agent.Team) + agent.Team.QuerySystem.TeamPower);
-        }
-
-        public static Func<Target, float> LocalBalanceOfPower(Agent agent)
-        {
-            return target => Math.Max(1, agent.Formation.QuerySystem.LocalPowerRatio);
-        }
-
         public static float CalculateEnemyTotalPower(Team chosenTeam)
         {
             float power = 0;
@@ -118,11 +67,6 @@ namespace TOR_Core.BattleMechanics.AI.CommonAIFunctions
             }
 
             return power;
-        }
-
-        public static float CalculateTeamTotalPower(Team chosenTeam)
-        {
-            return chosenTeam.QuerySystem.TeamPower;
         }
 
         public static Func<Target, float> AssessPositionForArtillery()
@@ -160,11 +104,6 @@ namespace TOR_Core.BattleMechanics.AI.CommonAIFunctions
         public static Func<Target, float> UnitCount()
         {
             return target => target.Formation?.CountOfUnits ?? 1;
-        }
-
-        public static Func<Target, float> TargetDistanceToPosition(TacticalPosition position)
-        {
-            return target => position == null ? 1.0f : target.TacticalPosition.Position.AsVec2.Distance(position.Position.AsVec2);
         }
     }
 

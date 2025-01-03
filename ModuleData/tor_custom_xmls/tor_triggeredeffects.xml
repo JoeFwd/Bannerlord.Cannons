@@ -11,7 +11,7 @@
                              HasShockWave="false"
                              TargetType="All"
                              DamageVariance="0"
-                             ScriptNameToTrigger="Bannerlord.Cannons.BattleMechanics.TriggeredEffect.Scripts.PrefabSpawnerScript"
+                             ScriptNameToTrigger="TOR_Core.BattleMechanics.TriggeredEffect.Scripts.PrefabSpawnerScript"
                              SpawnPrefabName="tor_mortar" />
     <TriggeredEffectTemplate StringID="place_greatcannon"
                              BurstParticleEffectPrefab="none"
@@ -23,7 +23,7 @@
                              HasShockWave="false"
                              TargetType="All"
                              DamageVariance="0"
-                             ScriptNameToTrigger="Bannerlord.Cannons.BattleMechanics.TriggeredEffect.Scripts.PrefabSpawnerScript"
+                             ScriptNameToTrigger="TOR_Core.BattleMechanics.TriggeredEffect.Scripts.PrefabSpawnerScript"
                              SpawnPrefabName="tor_greatcannon" />
     <TriggeredEffectTemplate StringID="place_fieldtrebuchet"
                              BurstParticleEffectPrefab="none"
@@ -35,6 +35,6 @@
                              HasShockWave="false"
                              TargetType="All"
                              DamageVariance="0"
-                             ScriptNameToTrigger="Bannerlord.Cannons.BattleMechanics.TriggeredEffect.Scripts.PrefabSpawnerScript"
+                             ScriptNameToTrigger="TOR_Core.BattleMechanics.TriggeredEffect.Scripts.PrefabSpawnerScript"
                              SpawnPrefabName="tor_fieldtrebuchet" />
 </TriggeredEffectTemplates>

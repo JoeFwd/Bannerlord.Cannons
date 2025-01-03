@@ -1,14 +1,11 @@
 ﻿using TOR_Core.GameManagers;
 using HarmonyLib;
-using TaleWorlds.CampaignSystem;
-using TaleWorlds.Core;
 using TaleWorlds.MountAndBlade;
 using TaleWorlds.MountAndBlade.GauntletUI.Mission;
 using TOR_Core.AbilitySystem;
 using TOR_Core.Battle.CrosshairMissionBehavior;
 using TOR_Core.BattleMechanics.Firearms;
 using TOR_Core.BattleMechanics.TriggeredEffect;
-using TOR_Core.Extensions.ExtendedInfoSystem;
 
 
 namespace Bannerlord.Cannons
@@ -27,15 +24,6 @@ namespace Bannerlord.Cannons
             TORKeyInputManager.Initialize();
             TriggeredEffectManager.LoadTemplates();
             AbilityFactory.LoadTemplates();
-        }
-
-        protected override void InitializeGameStarter(Game game, IGameStarter starterObject)
-        {
-            if(Game.Current.GameType is Campaign && starterObject is CampaignGameStarter)
-            {
-                var starter = starterObject as CampaignGameStarter;
-                starter.AddBehavior(new ExtendedInfoManager());
-            }
         }
 
         public override void OnMissionBehaviorInitialize(Mission mission)

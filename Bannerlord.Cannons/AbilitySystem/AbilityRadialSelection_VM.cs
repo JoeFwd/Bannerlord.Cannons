@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Timers;
+﻿using System.Timers;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 using TOR_Core.Extensions;
@@ -63,12 +58,9 @@ namespace TOR_Core.AbilitySystem
         public void DisplayErrorMessage(string message)
         {
             if (ErrorMessageVisible && _timer.Enabled) return;
-            else
-            {
                 ErrorMessageVisible = true;
                 ErrorMessageText = message;
                 _timer.Start();
-            }
         }
 
         private void OnItemSelected(Ability ability)

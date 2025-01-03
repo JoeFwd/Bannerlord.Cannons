@@ -1,5 +1,4 @@
 ﻿using System;
-using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.Localization;
@@ -20,8 +19,6 @@ namespace TOR_Core.AbilitySystem
         private bool _isDisabled;
         private string _disabledText;
         private string _abilityType;
-
-        public AbilityHUD_VM() : base() { }
 
         public override void RefreshValues()
         {

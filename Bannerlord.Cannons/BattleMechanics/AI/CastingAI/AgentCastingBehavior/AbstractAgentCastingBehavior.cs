@@ -72,36 +72,6 @@ namespace TOR_Core.BattleMechanics.AI.CastingAI.AgentCastingBehavior
             Agent.TryCastCurrentAbility(out _);
         }
 
-        protected Vec3 ComputeSpellAngleVelocityCorrection(Vec3 targetPosition, Vec3 targetVelocity)
-        {
-            float time;
-            switch (AbilityTemplate.AbilityEffectType)
-            {
-                case AbilityEffectType.Bombardment:
-                case AbilityEffectType.Vortex:
-                case AbilityEffectType.Heal:
-                case AbilityEffectType.Hex:
-                case AbilityEffectType.Augment:
-                {
-                    time = AbilityTemplate.CastTime;
-                    break;
-                }
-                default:
-                {
-                    time = AbilityTemplate.BaseMovementSpeed != 0 ? targetPosition.Distance(Agent.Position) / AbilityTemplate.BaseMovementSpeed : AbilityTemplate.CastTime;
-                    break;
-                }
-            }
-
-            return targetVelocity * time;
-        }
-
-
-        public Mat3 CalculateSpellRotation(Vec3 targetPosition, Vec3 originaPosition)
-        {
-            return Mat3.CreateMat3WithForward(targetPosition - originaPosition);
-        }
-
         public virtual List<BehaviorOption> CalculateUtility()
         {
             LatestScores = AgentCastingBehaviorConfiguration.FindTargets(Agent, AbilityTemplate)
