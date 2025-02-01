@@ -1,29 +1,15 @@
-﻿using TaleWorlds.MountAndBlade;
-using TOR_Core.Extensions;
+﻿using Bannerlord.Cannons;
+using TaleWorlds.MountAndBlade;
 
 namespace TOR_Core.BattleMechanics.Artillery
 {
     public class ArtilleryStandingPoint : StandingPoint
     {
+        private readonly IArtilleryCrewProvider _artilleryCrewProvider = ArtilleryCrewProviderFactory.CreateArtilleryCrewProvider();
+        
         public override bool IsDisabledForAgent(Agent agent)
         {
-            return !agent.IsArtilleryCrew() || base.IsDisabledForAgent(agent);
-        }
-    }
-
-    public class TrebuchetStandingPoint : StandingPoint
-    {
-        public override bool IsDisabledForAgent(Agent agent)
-        {
-            return agent.IsPlayerControlled ? true : base.IsDisabledForAgent(agent);
-        }
-    }
-
-    public class AmmoPickUpStandingPoint : StandingPointWithWeaponRequirement
-    {
-        public override bool IsDisabledForAgent(Agent agent)
-        {
-            return !agent.IsArtilleryCrew() || base.IsDisabledForAgent(agent);
+            return !_artilleryCrewProvider.IsArtilleryCrew(agent) || base.IsDisabledForAgent(agent);
         }
     }
 }

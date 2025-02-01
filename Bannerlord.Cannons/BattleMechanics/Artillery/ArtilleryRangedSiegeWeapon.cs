@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using Bannerlord.Cannons;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.InputSystem;
@@ -14,6 +15,8 @@ namespace TOR_Core.BattleMechanics.Artillery
 {
     public class ArtilleryRangedSiegeWeapon : BaseFieldSiegeWeapon
     {
+        private readonly IArtilleryCrewProvider _artilleryCrewProvider = ArtilleryCrewProviderFactory.CreateArtilleryCrewProvider();
+        
         #region animations
         private ActionIndexCache _idleAnimationActionIndex;
         private ActionIndexCache _shootAnimationActionIndex;
@@ -144,7 +147,7 @@ namespace TOR_Core.BattleMechanics.Artillery
             {
                 if (UserFormations.Count == 0)
                 {
-                    var form = Team.GetFormations().ToList().FirstOrDefault(formation => formation.Arrangement.GetAllUnits().FindAll(unit => ((Agent)unit).IsArtilleryCrew()).Count() > 2);
+                    var form = Team.GetFormations().ToList().FirstOrDefault(formation => formation.Arrangement.GetAllUnits().FindAll(unit => _artilleryCrewProvider.IsArtilleryCrew((Agent)unit)).Count() > 2);
                     if (form != null) form.StartUsingMachine(this, true);
                 }
             }
