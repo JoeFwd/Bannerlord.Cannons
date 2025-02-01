@@ -1,4 +1,8 @@
-﻿using HarmonyLib;
+using System.IO;
+using HarmonyLib;
+using TaleWorlds.CampaignSystem;
+using TaleWorlds.Core;
+using TaleWorlds.ModuleManager;
 using TaleWorlds.MountAndBlade;
 using TOR_Core.BattleMechanics.Firearms;
 
@@ -28,6 +32,20 @@ namespace Bannerlord.Cannons
             // mission.AddMissionBehavior(new AnimationTriggerMissionLogic());
             // mission.AddMissionBehavior(new DualWieldMissionLogic());
             // mission.AddMissionBehavior(new BattleShoutsMissionLogic());
+        }
+
+        public override void OnGameInitializationFinished(Game game)
+        {
+            if (game.GameType is not Campaign) return;
+        
+            LoadDadgBattleScenes();
+        }
+        
+        private static void LoadDadgBattleScenes()
+        {
+            var modulePath = ModuleHelper.GetModuleFullPath("Bannerlord.Cannons");
+            var battleScenesFileName = "battle_scenes.xml";
+            GameSceneDataManager.Instance?.LoadSPBattleScenes(Path.Combine(modulePath, "ModuleData", battleScenesFileName));   
         }
     }
 }
