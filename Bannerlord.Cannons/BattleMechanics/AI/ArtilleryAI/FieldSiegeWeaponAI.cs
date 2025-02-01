@@ -127,7 +127,7 @@ namespace TOR_Core.BattleMechanics.AI.ArtilleryAI
         {
             var targetingFunctions = new List<Axis>();
             targetingFunctions.Add(new Axis(0, 300, x => 0.7f - 3 * (float) Math.Pow(x - 0.3f, 3) + (float) Math.Pow(x, 2), CommonAIDecisionFunctions.DistanceToTarget(() => _fieldSiegeWeapon.GameEntity.GlobalPosition))); // 0.7 - 3(x-0.3)^3 + x^2
-            targetingFunctions.Add(new Axis(0, CommonAIDecisionFunctions.CalculateEnemyTotalPower(_fieldSiegeWeapon.Team), x => x, CommonAIDecisionFunctions.FormationPower()));
+            // targetingFunctions.Add(new Axis(0, CommonAIDecisionFunctions.CalculateEnemyTotalPower(_fieldSiegeWeapon.Team), x => x, CommonAIDecisionFunctions.FormationPower()));
             targetingFunctions.Add(new Axis(0, 70, x => x, CommonAIDecisionFunctions.UnitCount()));
             targetingFunctions.Add(new Axis(0, 10, x => x, CommonAIDecisionFunctions.TargetDistanceToHostiles()));
             return targetingFunctions;
