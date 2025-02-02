@@ -16,37 +16,42 @@ namespace TOR_Core.HarmonyPatches
         [HarmonyPatch(typeof(RangedSiegeWeapon), "ShootProjectileAux")]
         public static bool OverrideArtilleryShooting(RangedSiegeWeapon __instance, ItemObject missileItem, Agent ____lastShooterAgent)
         {
-            if(__instance is BaseFieldSiegeWeapon && ____lastShooterAgent != null && ____lastShooterAgent.IsAIControlled)
+            if (__instance is not BaseFieldSiegeWeapon fieldSiegeWeapon || ____lastShooterAgent is null)
+                return true;
+
+            Mat3 identity = Mat3.Identity;
+            
+            if (!____lastShooterAgent.IsAIControlled)
             {
-                var fieldSiegeWeapon = __instance as BaseFieldSiegeWeapon;
-                if (fieldSiegeWeapon == null || fieldSiegeWeapon.Target == null) return true;
-                Vec3 launchVec = Vec3.Zero;
-                float angle = fieldSiegeWeapon.GetTargetReleaseAngle(fieldSiegeWeapon.Target.SelectedWorldPosition, out launchVec);
+                identity.f = fieldSiegeWeapon.GetBallisticErrorAppliedDirection(1f);
+            }
+            else            
+            {
+                if (fieldSiegeWeapon.Target == null) return true;
+                float angle = fieldSiegeWeapon.GetTargetReleaseAngle(fieldSiegeWeapon.Target.SelectedWorldPosition, out Vec3 launchVec);
                 if (angle == float.NegativeInfinity)
                 {
                     Logger.Error("Tried to shoot field siege weapon without a valid ballistics solution.");
                     return true;
                 }
 
-                Mat3 identity = Mat3.Identity;
                 identity.f = launchVec;
-                identity.Orthonormalize();
-
-				Mission mission = Mission.Current;
-				Agent lastShooterAgent = ____lastShooterAgent;
-				mission.AddCustomMissile(lastShooterAgent, 
-                    new MissionWeapon(missileItem, null, null, 1), 
-                    fieldSiegeWeapon.ProjectileEntityCurrentGlobalPosition, 
-                    identity.f, 
-                    identity, 
-                    8f, 
-                    fieldSiegeWeapon.ProjectileVelocity, 
-                    false, 
-                    fieldSiegeWeapon, 
-                    -1);
-				return false;
             }
-            return true;
+            
+            identity.Orthonormalize();
+
+            Mission.Current.AddCustomMissile(____lastShooterAgent, 
+                new MissionWeapon(missileItem, null, null, 1), 
+                fieldSiegeWeapon.ProjectileEntityCurrentGlobalPosition, 
+                identity.f, 
+                identity, 
+                8f, 
+                fieldSiegeWeapon.ProjectileVelocity, 
+                false, 
+                fieldSiegeWeapon, 
+                -1);
+
+            return false;
         }
 
         [HarmonyPostfix]

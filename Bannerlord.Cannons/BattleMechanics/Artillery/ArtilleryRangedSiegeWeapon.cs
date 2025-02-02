@@ -59,7 +59,7 @@ namespace TOR_Core.BattleMechanics.Artillery
         private SynchedMissionObject _wheel_L;
         private float _verticalOffsetAngle;
         private MatrixFrame _barrelInitialLocalFrame;
-        private Agent _lastLoaderAgent;
+        private Agent? _lastLoaderAgent;
         private StandingPoint _waitStandingPoint;
         private Timer _timer;
         private SoundEvent _fireSound;
@@ -114,11 +114,11 @@ namespace TOR_Core.BattleMechanics.Artillery
         protected override void OnTick(float dt)
         {
             CheckNullReloaderOriginalPoint();
-            if (Target != null)
+            if (Target != null || (!PilotAgent?.IsAIControlled ?? false))
             {
                 base.OnTick(dt);
             }
-
+            
             HandleAnimations();
             HandleAmmoPickup();
             HandleAmmoLoad();
@@ -298,7 +298,7 @@ namespace TOR_Core.BattleMechanics.Artillery
 
         private void SendLoaderAgentToWaitingPoint()
         {
-            if(_lastLoaderAgent != null && _waitStandingPoint != null)
+            if(_waitStandingPoint != null && (_lastLoaderAgent?.IsAIControlled ?? false))
             {
                 SetActivationWaitingPoint(true);
                 _lastLoaderAgent.AIMoveToGameObjectEnable(_waitStandingPoint, this, Agent.AIScriptedFrameFlags.NoAttack);

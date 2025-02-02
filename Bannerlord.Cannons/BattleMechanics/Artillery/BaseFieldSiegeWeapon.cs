@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using TaleWorlds.Core;
+﻿using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
@@ -115,6 +110,22 @@ namespace TOR_Core.BattleMechanics.Artillery
                     if (!sp.IsDeactivated) sp.SetIsDeactivatedSynched(true);
                 }
             }
+        }
+
+        public Vec3 GetBallisticErrorAppliedDirection(float ballisticErrorAmount)
+        {
+            // TODO: refactor it just for our needs -> Copied from RangedSiegeWeapon
+            Mat3 mat3 = new Mat3()
+            {
+                f = this.ShootingDirection,
+                u = Vec3.Up
+            };
+            mat3.Orthonormalize();
+            float a = MBRandom.RandomFloat * 6.28318548f;
+            mat3.RotateAboutForward(a);
+            float f = ballisticErrorAmount * MBRandom.RandomFloat;
+            mat3.RotateAboutSide(f.ToRadians());
+            return mat3.f;
         }
     }
 }

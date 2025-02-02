@@ -15,7 +15,7 @@ namespace TOR_Core.BattleMechanics.Artillery
     {
         public override TextObject GetActionTextForStandingPoint(UsableMissionObject usableGameObject)
         {
-            return new TextObject("{=!}Cannonball Pile");
+            return new TextObject("{=!}Pick up a cannonball");
         }
 
         public override string GetDescriptionText(GameEntity gameEntity = null)
