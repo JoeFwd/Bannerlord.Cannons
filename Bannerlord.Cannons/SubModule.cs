@@ -1,51 +1,68 @@
-using System.IO;
+using System.Linq;
+using System.Reflection;
+using TOR_Core.BattleMechanics.Firearms;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
+using TaleWorlds.DotNet;
+using TaleWorlds.Engine;
 using TaleWorlds.ModuleManager;
 using TaleWorlds.MountAndBlade;
-using TOR_Core.BattleMechanics.Firearms;
-
+using Module = TaleWorlds.MountAndBlade.Module;
+using Path = System.IO.Path;
 
 namespace Bannerlord.Cannons
 {
     public class SubModule : MBSubModuleBase
     {
-        public static Harmony HarmonyInstance { get; private set; }
-        
+        private static readonly Harmony Harmony = new Harmony("mod.harmony.bannerlord.cannons");
+
         protected override void OnSubModuleLoad()
         {
             base.OnSubModuleLoad();
-
-            HarmonyInstance = new Harmony("mod.harmony.bannerlord.cannons");
-            HarmonyInstance.PatchAll();
+            InitialiseHarmonyPatches();
         }
 
         public override void OnMissionBehaviorInitialize(Mission mission)
         {
-            // mission.AddMissionBehavior(new WeaponEffectMissionLogic());
-            // mission.AddMissionBehavior(new CustomBannerMissionLogic());
-            // mission.AddMissionBehavior(new DismembermentMissionLogic());
-            // mission.AddMissionBehavior(new MoraleMissionLogic());
             mission.AddMissionBehavior(new CannonballExplosionMissionLogic());
-            // mission.AddMissionBehavior(new ForceAtmosphereMissionLogic());
-            // mission.AddMissionBehavior(new AnimationTriggerMissionLogic());
-            // mission.AddMissionBehavior(new DualWieldMissionLogic());
-            // mission.AddMissionBehavior(new BattleShoutsMissionLogic());
         }
 
         public override void OnGameInitializationFinished(Game game)
         {
-            if (game.GameType is not Campaign) return;
+            if (!(game.GameType is Campaign)) return;
         
             LoadDadgBattleScenes();
         }
-        
+
+        public void Inject()
+        {
+            Module.CurrentModule.SubModules.Add(this);
+            InitialiseScriptTypes();
+            InitialiseHarmonyPatches();
+        }
+
         private static void LoadDadgBattleScenes()
         {
             var modulePath = ModuleHelper.GetModuleFullPath("Bannerlord.Cannons");
             var battleScenesFileName = "battle_scenes.xml";
-            GameSceneDataManager.Instance?.LoadSPBattleScenes(Path.Combine(modulePath, "ModuleData", battleScenesFileName));   
+            GameSceneDataManager.Instance?.LoadSPBattleScenes(Path.Combine(modulePath, "ModuleData",
+                battleScenesFileName));
+        }
+
+        private static void InitialiseScriptTypes()
+        {
+            var types = Assembly.GetExecutingAssembly()
+                .GetTypes()
+                .Where(t => typeof(ScriptComponentBehavior).IsAssignableFrom(t) && !t.IsAbstract && !t.IsInterface)
+                .ToDictionary(t => t.Name, t => t);
+
+            Managed.AddTypes(types);
+        }
+
+        private static void InitialiseHarmonyPatches()
+        {
+            Harmony.PatchAll(Assembly.GetExecutingAssembly());
         }
     }
 }
