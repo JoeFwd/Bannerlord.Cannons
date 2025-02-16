@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using Bannerlord.Cannons;
 using TaleWorlds.Core;
@@ -134,7 +134,7 @@ namespace TOR_Core.BattleMechanics.Artillery
             ForceAmmoPointUsage();
             HandleWaitingTimer();
             UpdateRecoilEffect(dt);
-            UpdateWheelRotation(dt);
+            // UpdateWheelRotation(dt);
             HandleAITeamUsage();
         }
         
@@ -538,13 +538,13 @@ namespace TOR_Core.BattleMechanics.Artillery
             _wheel_R.GameEntity.SetFrame(ref frame2);
         }
 
-        private void UpdateWheelRotation(float dt)
-        {
-            if(!CanRotate()) _isRotating = false;
-            if (_isRotating)
-            {
-                DoWheelRotation(dt, _rotationDirection, _rotationDirection);
-            }
-        }
+        // private void UpdateWheelRotation(float dt)
+        // {
+        //     if(!CanRotate()) _isRotating = false;
+        //     if (_isRotating)
+        //     {
+        //         DoWheelRotation(dt, _rotationDirection, _rotationDirection);
+        //     }
+        // }
     }
 }
