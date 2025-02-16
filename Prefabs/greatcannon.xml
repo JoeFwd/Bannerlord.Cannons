@@ -37,6 +37,8 @@
 							<variable name="Recoil2Duration" value="0.800"/>
 							<variable name="DisplayName" value="{=!}Great Cannon"/>
 							<variable name="BaseMuzzleVelocity" value="120.000"/>
+							<variable name="SlideBackFrameFactor" value="0.600"/>
+							<variable name="WheelRotationAxis" value="X"/>							
 							<variable name="PreferHighAngle" value="false"/>
 							<variable name="MissileItemID" value="tor_neutral_weapon_ammo_cannonball"/>
 							<variable name="Focus" value="Troops"/>

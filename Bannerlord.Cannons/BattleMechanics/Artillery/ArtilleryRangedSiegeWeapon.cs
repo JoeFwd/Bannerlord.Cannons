@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using Bannerlord.Cannons;
 using TaleWorlds.Core;
@@ -13,6 +13,12 @@ using TOR_Core.Extensions;
 
 namespace TOR_Core.BattleMechanics.Artillery
 {
+    public enum WheelRotationAxis
+    {
+        X,
+        Y
+    }
+
     public class ArtilleryRangedSiegeWeapon : BaseFieldSiegeWeapon
     {
         private readonly IArtilleryCrewProvider _artilleryCrewProvider = ArtilleryCrewProviderFactory.CreateArtilleryCrewProvider();
@@ -51,6 +57,8 @@ namespace TOR_Core.BattleMechanics.Artillery
         public float Recoil2Duration = 0.8f;
         public string DisplayName = "Artillery";
         public float BaseMuzzleVelocity = 40f;
+        public float SlideBackFrameFactor = 0.6f;
+        public WheelRotationAxis WheelRotationAxis = WheelRotationAxis.X;
         private int _fireSoundIndex;
         private int _fireSoundIndex2;
         private SynchedMissionObject _body;
@@ -461,7 +469,7 @@ namespace TOR_Core.BattleMechanics.Artillery
         {
             var frame = _body.GameEntity.GetFrame();
             _currentSlideBackFrameOrig = frame;
-            _currentSlideBackFrame = frame.Advance(0.6f);
+            _currentSlideBackFrame = frame.Advance(SlideBackFrameFactor);
             _lastRecoilTimeStart = Mission.Current.CurrentTime;
             _currentRecoilTimer = 0;
         }
@@ -497,7 +505,7 @@ namespace TOR_Core.BattleMechanics.Artillery
                 }
 
                 _body.GameEntity.SetFrame(ref frame);
-                DoWheelRotation(dt, 1, -1, 5);
+                DoWheelRotation(dt, 1, 1, 5);
             }
             else if (_currentRecoilTimer < Recoil2Duration)
             {
@@ -505,17 +513,27 @@ namespace TOR_Core.BattleMechanics.Artillery
                 var amount = (_currentRecoilTimer - RecoilDuration) / Recoil2Duration;
                 frame = MatrixFrame.Lerp(_currentSlideBackFrame, _currentSlideBackFrameOrig, amount);
                 _body.GameEntity.SetFrame(ref frame);
-                DoWheelRotation(dt, -1, 1);
+                DoWheelRotation(dt, 1, 1);
             }
         }
 
         private void DoWheelRotation(float dt, float leftwheeldirection, float rightwheeldirection, float speed = 1)
         {
             var frame = _wheel_L.GameEntity.GetFrame();
-            frame.rotation.RotateAboutSide(leftwheeldirection * dt * speed);
-            _wheel_L.GameEntity.SetFrame(ref frame);
             var frame2 = _wheel_R.GameEntity.GetFrame();
-            frame2.rotation.RotateAboutSide(rightwheeldirection * dt * speed);
+
+            if (WheelRotationAxis.Equals(WheelRotationAxis.Y))
+            {
+                frame.rotation.RotateAboutForward(leftwheeldirection * dt * speed);
+                frame2.rotation.RotateAboutForward(rightwheeldirection * dt * speed);
+            }
+            else if (WheelRotationAxis.Equals(WheelRotationAxis.X))
+            {
+                frame.rotation.RotateAboutSide(leftwheeldirection * dt * speed);
+                frame2.rotation.RotateAboutSide(rightwheeldirection * dt * speed);
+            }
+
+            _wheel_L.GameEntity.SetFrame(ref frame);
             _wheel_R.GameEntity.SetFrame(ref frame2);
         }
 
