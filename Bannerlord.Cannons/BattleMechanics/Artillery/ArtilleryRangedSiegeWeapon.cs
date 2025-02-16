@@ -79,6 +79,7 @@ namespace TOR_Core.BattleMechanics.Artillery
         private int _rotationDirection = 0;
         private float _lastCurrentDirection;
 
+        public override float DirectionRestriction => 100f;
         protected override float ShootingSpeed => BaseMuzzleVelocity;
         public override float ProjectileVelocity => ShootingSpeed;
         protected override Vec3 ShootingDirection => Projectile.GameEntity.GetGlobalFrame().rotation.f;
