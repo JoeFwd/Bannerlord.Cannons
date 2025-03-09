@@ -1,9 +1,9 @@
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using TOR_Core.BattleMechanics.Firearms;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
-using TaleWorlds.Core;
 using TaleWorlds.DotNet;
 using TaleWorlds.Engine;
 using TaleWorlds.ModuleManager;
@@ -25,9 +25,8 @@ namespace Bannerlord.Cannons
 
         public override void OnMissionBehaviorInitialize(Mission mission)
         {
-            mission.AddMissionBehavior(new CannonballExplosionMissionLogic());
+            GetMissionLogics().ForEach(missionLogic => mission.AddMissionBehavior(missionLogic));
         }
-
 
 #if !IS_MULTIPLAYER_BUILD
         public override void OnGameInitializationFinished(Game game)
@@ -66,6 +65,15 @@ namespace Bannerlord.Cannons
         private static void InitialiseHarmonyPatches()
         {
             Harmony.PatchAll(Assembly.GetExecutingAssembly());
+        }
+
+        private List<MissionLogic> GetMissionLogics()
+        {
+            return Assembly.GetExecutingAssembly().GetTypes()
+                .Where(t => typeof(MissionLogic).IsAssignableFrom(t) && !t.IsAbstract && t.GetConstructor(Type.EmptyTypes) != null)
+                .Select(t => Activator.CreateInstance(t) as MissionLogic)
+                .Where(instance => instance != null)
+                .ToList();
         }
     }
 }
