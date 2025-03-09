@@ -127,5 +127,10 @@ namespace TOR_Core.BattleMechanics.Artillery
             mat3.RotateAboutSide(f.ToRadians());
             return mat3.f;
         }
+
+        public GameEntity GetShotProjectileEntity()
+        {
+            return Projectile.GameEntity;
+        }
     }
 }

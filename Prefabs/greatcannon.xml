@@ -40,6 +40,8 @@
 							<variable name="SlideBackFrameFactor" value="0.600"/>
 							<variable name="WheelRotationAxis" value="X"/>							
 							<variable name="CannonShotExplosionEffect" value="psys_cannon_shot_1"/>
+							<variable name="ProjectileGroundExplosionEffect" value="cannon_explosion"/>
+							<variable name="ProjectileGroundExplosionSoundId" value="mortar_explosion_1"/>
 							<variable name="PreferHighAngle" value="false"/>
 							<variable name="MissileItemID" value="tor_neutral_weapon_ammo_cannonball"/>
 							<variable name="Focus" value="Troops"/>
