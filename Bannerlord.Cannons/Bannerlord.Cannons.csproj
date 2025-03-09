@@ -25,6 +25,11 @@
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <IS_MULTIPLAYER_BUILD>true</IS_MULTIPLAYER_BUILD>
+    <DefineConstants Condition="'$(IS_MULTIPLAYER_BUILD)' == 'true'">IS_MULTIPLAYER_BUILD;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  
   <ItemGroup>
     <Reference Include="$(GameFolder)\bin\$(GameBinariesFolder)\Newtonsoft.Json.dll">
       <HintPath>%(Identity)</HintPath>

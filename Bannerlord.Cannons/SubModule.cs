@@ -28,12 +28,15 @@ namespace Bannerlord.Cannons
             mission.AddMissionBehavior(new CannonballExplosionMissionLogic());
         }
 
+
+#if !IS_MULTIPLAYER_BUILD
         public override void OnGameInitializationFinished(Game game)
         {
             if (!(game.GameType is Campaign)) return;
-        
+
             LoadDadgBattleScenes();
         }
+#endif
 
         public void Inject()
         {
