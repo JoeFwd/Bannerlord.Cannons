@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using Bannerlord.Cannons;
 using TaleWorlds.Core;
@@ -59,6 +59,7 @@ namespace TOR_Core.BattleMechanics.Artillery
         public float BaseMuzzleVelocity = 40f;
         public float SlideBackFrameFactor = 0.6f;
         public WheelRotationAxis WheelRotationAxis = WheelRotationAxis.X;
+        public string CannonShotExplosionEffect;
         private int _fireSoundIndex;
         private int _fireSoundIndex2;
         private SynchedMissionObject _body;
@@ -450,7 +451,7 @@ namespace TOR_Core.BattleMechanics.Artillery
         private void PlayFireProjectileEffects()
         {
             var frame = MissileStartingPositionEntityForSimulation.GetGlobalFrame();
-            Mission.Current.AddParticleSystemBurstByName("psys_cannon_shot_1", frame, false);
+            AddParticleToFrame(frame, CannonShotExplosionEffect);
             if (_fireSound == null || !_fireSound.IsValid)
             {
                 if (MBRandom.RandomFloat > 0.5f)
@@ -464,6 +465,15 @@ namespace TOR_Core.BattleMechanics.Artillery
 
                 _fireSound.PlayInPosition(GameEntity.GlobalPosition);
             }
+        }
+
+        private static void AddParticleToFrame(MatrixFrame frame, string particuleName)
+        {
+            var synchThroughNetwork = false;
+#if IS_MULTIPLAYER_BUILD
+            synchThroughNetwork = true;
+#endif
+            Mission.Current.AddParticleSystemBurstByName(particuleName, frame, synchThroughNetwork);
         }
 
         private void DoSlideBack()
