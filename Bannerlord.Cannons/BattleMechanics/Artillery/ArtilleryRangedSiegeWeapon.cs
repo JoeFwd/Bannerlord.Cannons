@@ -60,6 +60,8 @@ namespace TOR_Core.BattleMechanics.Artillery
         public float SlideBackFrameFactor = 0.6f;
         public WheelRotationAxis WheelRotationAxis = WheelRotationAxis.X;
         public string CannonShotExplosionEffect;
+        public string ProjectileGroundExplosionEffect;
+        public string ProjectileGroundExplosionSoundId;
         private int _fireSoundIndex;
         private int _fireSoundIndex2;
         private SynchedMissionObject _body;
