@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<base>
+	<physics_materials>
+		<physics_material
+			id="cannonball"
+			dont_stick_missiles="true"
+			static_friction="0.400"
+			dynamic_friction="0.200"
+			restitution="0.600"
+			softness="0.000"
+			linear_damping="0.500"
+			angular_damping="0.100"
+			display_color="255, 98, 79, 166" />
+	</physics_materials>
+</base>
