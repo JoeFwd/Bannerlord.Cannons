@@ -11,7 +11,7 @@
   </Item>
   <Item id="tor_neutral_weapon_ammo_cannonball" name="{=!}Cannonball" is_merchandise="false" body_name="bo_projectile_rock" holster_body_name="bo_axe_short" flying_mesh="cannonball_001" mesh="cannonball_001" holster_mesh="" subtype="arrows" weight="15" difficulty="0" appearance="1" Type="Thrown" item_holsters="">
     <ItemComponent>
-      <Weapon weapon_class="Boulder" ammo_class="Boulder" stack_amount="1" position="0.05, -0.15, 0" physics_material="missile" thrust_speed="100" speed_rating="0" missile_speed="8" weapon_length="95" thrust_damage="125" item_usage="heavy_stone" flying_sound_code="event:/mission/combat/boulder/passby" trail_particle_name="psys_cannonball_trail" rotation_speed="2, 0.5, 0">
+      <Weapon weapon_class="Boulder" ammo_class="Boulder" stack_amount="1" position="0.05, -0.15, 0" physics_material="cannonball" thrust_speed="100" speed_rating="0" missile_speed="8" weapon_length="95" thrust_damage="125" item_usage="heavy_stone" flying_sound_code="event:/mission/combat/boulder/passby" trail_particle_name="psys_cannonball_trail" rotation_speed="2, 0.5, 0">
         <WeaponFlags RangedWeapon="true" NotUsableWithOneHand="true" TwoHandIdleOnMount="true" CanPenetrateShield="true" MissileWithPhysics="true" UseHandAsThrowBase="true" Consumable="true" LeavesTrail="true" Burning="true" AffectsAreaBig="true" AmmoBreaksOnBounceBack="true" />
       </Weapon>
     </ItemComponent>

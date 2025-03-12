@@ -26,7 +26,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <IS_MULTIPLAYER_BUILD>true</IS_MULTIPLAYER_BUILD>
+    <IS_MULTIPLAYER_BUILD>false</IS_MULTIPLAYER_BUILD>
     <DefineConstants Condition="'$(IS_MULTIPLAYER_BUILD)' == 'true'">IS_MULTIPLAYER_BUILD;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   
