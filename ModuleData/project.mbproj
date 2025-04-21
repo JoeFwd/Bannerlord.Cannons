@@ -3,7 +3,7 @@
 	<outputDirectory>../MBModule/MBModule/</outputDirectory>
 	<XMLDirectory>../WOTS/Modules/Bannerlord.Cannons/</XMLDirectory>
 	<ModuleAssemblyDirectory>../WOTS/bin/</ModuleAssemblyDirectory>
-	<file id="soln_module_sound" name="ModuleData/tor_sounds.xml" type="module_sound" />
+	<file id="soln_module_sound" name="ModuleData/sounds.xml" type="module_sound" />
   <file id="soln_collision_infos" name="ModuleData/collision_infos.xml" type="collision_infos" />
   <file id="soln_physics_materials" name="ModuleData/physics_materials.xml" type="physics_material" />
 </base>
