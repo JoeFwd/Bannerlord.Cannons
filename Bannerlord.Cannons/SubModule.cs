@@ -29,7 +29,7 @@ namespace Bannerlord.Cannons
             GetMissionLogics().ForEach(missionLogic => mission.AddMissionBehavior(missionLogic));
         }
 
-#if !IS_MULTIPLAYER_BUILD
+#if !IS_MULTIPLAYER_BUILD && !RELEASE
         public override void OnGameInitializationFinished(Game game)
         {
             if (!(game.GameType is Campaign)) return;
