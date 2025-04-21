@@ -1,0 +1,84 @@
+name: Publish
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-module:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 8.0.x
+      - name: Build
+        run: |
+          artifact=$(pwd)/bannerlord
+          mkdir -p $artifact;
+          proj="Bannerlord.Cannons/Bannerlord.Cannons.csproj";
+          dotnet clean $proj --configuration Release;
+          dotnet build $proj --configuration Release -p:GameFolder="$artifact";
+
+      - name: Setup .NET 6
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 6.0.x
+
+      - name: Install Bannerlord.ChangelogParser
+        run: dotnet tool install -g Bannerlord.ChangelogParser;
+        shell: pwsh
+
+      - name: Run ChangelogParser
+        id: changelog
+        run: |
+          vers="$(bannerlord_changelog_parser latestversion -f "$PWD/changelog.txt")"
+          echo "::set-output name=mod_version::$vers"
+          desc="$(bannerlord_changelog_parser fulldescription -f "$PWD/changelog.txt")"
+          desc="${desc//'%'/'%25'}"
+          desc="${desc//$'\n'/'%0A'}"
+          desc="${desc//$'\r'/'%0D'}"
+          echo "::set-output name=mod_description::$desc"
+      - name: Upload bannerlord folder
+        uses: actions/upload-artifact@v4
+        with:
+          name: bannerlord
+          path: ./bannerlord
+
+  ###########################
+  #        NUGET/GPR        #
+  ###########################
+  publish-on-nuget:
+    name: Publish Module to NuGet
+    runs-on: ubuntu-latest
+    needs: [ "build-module" ]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Pack
+        run: dotnet pack --configuration Release -o "./packages"
+        shell: pwsh
+
+      - name: Push to NuGet
+        run: dotnet nuget push "./packages/*.nupkg" -k ${{ secrets.NUGET_API_KEY }} -s https://www.nuget.org --skip-duplicate
+        shell: pwsh
+
+  ###########################
+  #         GITHUB          #
+  ###########################
+  publish-on-github:
+    needs: [ "build-module" ]
+    uses: BUTR/workflows/.github/workflows/release-github.yml@master
+    with:
+      mod_id: Bannerlord.Cannons
+      mod_version: ${{ needs.build-module.outputs.mod_version }}
+      mod_description: ${{ needs.build-module.outputs.mod_description }}
+      artifact_name: bannerlord
