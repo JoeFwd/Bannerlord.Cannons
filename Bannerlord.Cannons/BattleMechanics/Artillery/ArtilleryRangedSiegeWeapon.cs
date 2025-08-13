@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Bannerlord.Cannons;
@@ -79,6 +80,8 @@ namespace TOR_Core.BattleMechanics.Artillery
         private bool _isRotating;
         private int _rotationDirection = 0;
         private float _lastCurrentDirection;
+        
+        private readonly Dictionary<int, Action> _onCarriedProjectileDroppedCache = new ();
 
         public override float DirectionRestriction => 100f;
         protected override float ShootingSpeed => BaseMuzzleVelocity;
@@ -191,7 +194,9 @@ namespace TOR_Core.BattleMechanics.Artillery
 
         private void HandleAmmoLoad()
         {
-            if (LoadAmmoStandingPoint != null && LoadAmmoStandingPoint.HasUser)
+            if (LoadAmmoStandingPoint is null) return;
+            
+            if (LoadAmmoStandingPoint.HasUser)
             {
                 var user = LoadAmmoStandingPoint.UserAgent;
                 _lastLoaderAgent = user;
@@ -271,11 +276,29 @@ namespace TOR_Core.BattleMechanics.Artillery
                                 user.StopUsingGameObject(true);
                             }
                         }
+
+                        if (!_onCarriedProjectileDroppedCache.ContainsKey(user.Index) && user.WieldedWeapon.Item == OriginalMissileItem)
+                        {
+                            _onCarriedProjectileDroppedCache[user.Index] = () => OnCarriedProjectileDropped(user);
+                            user.OnAgentWieldedItemChange += _onCarriedProjectileDroppedCache[user.Index];    
+                        }
                     }
                 }
             }
         }
 
+        private void OnCarriedProjectileDropped(Agent agent)
+        {
+            agent.OnAgentWieldedItemChange -= _onCarriedProjectileDroppedCache[agent.Index];
+            _onCarriedProjectileDroppedCache.Remove(agent.Index);
+
+            if (agent.GetCurrentAction(1)?.Index != _loadAmmoEndAnimationActionIndex.Index)
+            {
+                // stop using loading ammo spot
+                agent.StopUsingGameObject();
+            }
+        }
+        
         protected override void OnRangedSiegeWeaponStateChange()
         {
             base.OnRangedSiegeWeaponStateChange();
