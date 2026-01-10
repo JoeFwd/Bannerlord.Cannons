@@ -1,14 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions;
+using Bannerlord.Cannons.BattleMechanics.Artillery;
+using Bannerlord.Cannons.Extensions;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
-using TOR_Core.BattleMechanics.AI.CommonAIFunctions;
-using TOR_Core.BattleMechanics.Artillery;
-using TOR_Core.Extensions;
 
-namespace TOR_Core.BattleMechanics.AI.ArtilleryAI
+namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
 {
     public class FieldSiegeWeaponAI : UsableMachineAIBase
     {

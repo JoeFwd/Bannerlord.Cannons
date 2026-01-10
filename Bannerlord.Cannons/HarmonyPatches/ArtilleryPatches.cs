@@ -1,11 +1,11 @@
-﻿using Bannerlord.Cannons.Logging;
+﻿using Bannerlord.Cannons.BattleMechanics.Artillery;
+using Bannerlord.Cannons.Logging;
 using HarmonyLib;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
-using TOR_Core.BattleMechanics.Artillery;
 
-namespace TOR_Core.HarmonyPatches
+namespace Bannerlord.Cannons.HarmonyPatches
 {
     [HarmonyPatch]
     public class ArtilleryPatches

@@ -1,10 +1,10 @@
-﻿using TaleWorlds.Core;
+﻿using Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions;
+using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
-using TOR_Core.BattleMechanics.AI.CommonAIFunctions;
 
-namespace TOR_Core.BattleMechanics.Artillery
+namespace Bannerlord.Cannons.BattleMechanics.Artillery
 {
     public abstract class BaseFieldSiegeWeapon : RangedSiegeWeapon
     {

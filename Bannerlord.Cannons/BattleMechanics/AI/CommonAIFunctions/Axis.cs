@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using TaleWorlds.MountAndBlade;
 
-namespace TOR_Core.BattleMechanics.AI.CommonAIFunctions
+namespace Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions
 {
     public class Axis
     {

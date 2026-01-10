@@ -1,6 +1,6 @@
 ﻿using TaleWorlds.MountAndBlade;
 
-namespace TOR_Core.BattleMechanics.Artillery;
+namespace Bannerlord.Cannons.BattleMechanics.Artillery;
 
 public class TrebuchetStandingPoint : StandingPoint
 {

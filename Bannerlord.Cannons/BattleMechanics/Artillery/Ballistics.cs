@@ -1,13 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using TaleWorlds.Library;
+﻿using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 using TaleWorlds.TwoDimension;
 
-namespace TOR_Core.BattleMechanics.Artillery
+namespace Bannerlord.Cannons.BattleMechanics.Artillery
 {
     public static class Ballistics
     {

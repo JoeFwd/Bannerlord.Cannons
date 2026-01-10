@@ -3,7 +3,7 @@ using TaleWorlds.Localization;
 using TaleWorlds.MountAndBlade;
 using TaleWorlds.MountAndBlade.Objects.Usables;
 
-namespace TOR_Core.BattleMechanics.Artillery
+namespace Bannerlord.Cannons.BattleMechanics.Artillery
 {
     public class CannonBallPile : SiegeMachineStonePile
     {

@@ -1,11 +1,10 @@
 ﻿using System;
-using System.Linq;
+using Bannerlord.Cannons.Extensions;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
-using TOR_Core.Extensions;
 
-namespace TOR_Core.BattleMechanics.AI.CommonAIFunctions
+namespace Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions
 {
     public static class CommonAIDecisionFunctions
     {

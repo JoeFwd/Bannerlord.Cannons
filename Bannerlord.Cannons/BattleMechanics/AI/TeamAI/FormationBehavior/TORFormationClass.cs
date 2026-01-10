@@ -1,4 +1,4 @@
-﻿namespace TOR_Core.BattleMechanics.AI.TeamAI.FormationBehavior
+﻿namespace Bannerlord.Cannons.BattleMechanics.AI.TeamAI.FormationBehavior
 {
     public enum TORFormationClass
     {

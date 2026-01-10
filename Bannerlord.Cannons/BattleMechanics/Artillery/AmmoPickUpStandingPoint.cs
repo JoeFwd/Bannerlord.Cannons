@@ -1,7 +1,6 @@
-﻿using Bannerlord.Cannons;
-using TaleWorlds.MountAndBlade;
+﻿using TaleWorlds.MountAndBlade;
 
-namespace TOR_Core.BattleMechanics.Artillery;
+namespace Bannerlord.Cannons.BattleMechanics.Artillery;
 
 public class AmmoPickUpStandingPoint : StandingPointWithWeaponRequirement
 {

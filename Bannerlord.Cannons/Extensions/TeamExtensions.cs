@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using TaleWorlds.MountAndBlade;
 
-namespace TOR_Core.Extensions
+namespace Bannerlord.Cannons.Extensions
 {
     public static class TeamExtensions
     {

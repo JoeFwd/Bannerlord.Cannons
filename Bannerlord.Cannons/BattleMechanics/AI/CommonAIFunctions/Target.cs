@@ -3,7 +3,7 @@ using Bannerlord.Cannons.Logging;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 
-namespace TOR_Core.BattleMechanics.AI.CommonAIFunctions
+namespace Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions
 {
     // This class exists primarily for two reasons.
     // Decoupling our implementation. If TaleWorlds changes their Threat class or removes it, we can rework all references to the logic in this class without having to change all of our classes.

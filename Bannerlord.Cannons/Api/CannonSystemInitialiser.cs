@@ -1,6 +1,4 @@
-﻿using Bannerlord.Cannons;
-
-namespace TOR_Core.Api;
+﻿namespace Bannerlord.Cannons.Api;
 
 public static class CannonSystemInitialiser
 {
