@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Bannerlord.Cannons.BattleMechanics.AI;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
@@ -24,9 +25,11 @@ namespace Bannerlord.Cannons
             InitialiseHarmonyPatches();
         }
 
-        public override void OnMissionBehaviorInitialize(Mission mission)
+        public override void OnBeforeMissionBehaviorInitialize(Mission mission)
         {
-            GetMissionLogics().ForEach(missionLogic => mission.AddMissionBehavior(missionLogic));
+            base.OnBeforeMissionBehaviorInitialize(mission);
+            
+            mission.AddMissionBehavior(new CannonTacticLogic(ArtilleryCrewProviderFactory.CreateArtilleryCrewProvider()));
         }
 
 #if !IS_MULTIPLAYER_BUILD && !RELEASE
