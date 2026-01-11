@@ -1,24 +1,9 @@
 {
   "profiles": {
-    "Bannerlord": {
+    "Launcher": {
       "commandName": "Executable",
-      "executablePath": "$(GameFolder)\\bin\\$(GameBinariesFolder)\\Bannerlord.exe",
-      "commandLineArgs": "/singleplayer /continuegame _MODULES_*Bannerlord.Harmony*Native*SandBoxCore*CustomBattle*Sandbox*StoryMode*$(ModuleId)*_MODULES_",
-      "workingDirectory": "$(GameFolder)\\bin\\$(GameBinariesFolder)"
-    },
-
-    "BLSE Bannerlord": {
-      "commandName": "Executable",
-      "executablePath": "$(GameFolder)\\bin\\$(GameBinariesFolder)\\Bannerlord.BLSE.Standalone.exe",
-      "commandLineArgs": "/disableautogenexceptions /singleplayer _MODULES_*Bannerlord.Harmony*Native*SandBoxCore*CustomBattle*Sandbox*StoryMode*$(ModuleId)*_MODULES_",
-      "workingDirectory": "$(GameFolder)\\bin\\$(GameBinariesFolder)"
-    },
-
-    "BLSE Bannerlord With Crash Reporter": {
-      "commandName": "Executable",
-      "executablePath": "$(GameFolder)\\bin\\$(GameBinariesFolder)\\Bannerlord.BLSE.Standalone.exe",
-      "commandLineArgs": "/enablecrashhandlerwhendebuggerisattached /singleplayer _MODULES_*Bannerlord.Harmony*Native*SandBoxCore*CustomBattle*Sandbox*StoryMode*$(ModuleId)*_MODULES_",
-      "workingDirectory": "$(GameFolder)\\bin\\$(GameBinariesFolder)"
-    }
+      "executablePath": "$(GameFolder)\\bin\\Win64_Shipping_Client\\TaleWorlds.MountAndBlade.Launcher.exe",
+      "workingDirectory": "$(GameFolder)\\bin\\Win64_Shipping_Client"
+    } 
   }
 }
