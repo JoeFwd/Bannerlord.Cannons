@@ -29,14 +29,4 @@
     <PackageReference Include="Lib.Harmony" Version="2.2.2" IncludeAssets="compile" />
   </ItemGroup>
 
-  <Target Name="PostBuildCopy" AfterTargets="PostBuildEvent">
-    <PropertyGroup>
-      <DestinationFolder>$(GameFolder)\Modules\$(ModuleId)\bin\Win64_Shipping_wEditor\</DestinationFolder>
-    </PropertyGroup>
-    <ItemGroup>
-      <FilesToCopy Include="$(SourceFolder)**\*" />
-    </ItemGroup>
-    <Copy SourceFiles="@(FilesToCopy)" DestinationFolder="$(DestinationFolder)" SkipUnchangedFiles="true" />
-  </Target>
-
 </Project>
