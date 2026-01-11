@@ -145,14 +145,14 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         {
             if (!Team?.IsPlayerTeam ?? false)
             {
-                if (UserFormations.Count > 0 && UserFormations.All(formation => formation.Index != (int) TORFormationClass.Artillery))
+                if (UserFormations.Count > 0 && UserFormations.All(formation => formation.Index != (int) FormationClass.Infantry))
                 {
                     UserFormations[0]?.StopUsingMachine(this);
                 }
 
                 if (UserFormations.Count == 0)
                 {
-                    Team.FormationsIncludingSpecialAndEmpty.ToList().FirstOrDefault(form => form.Index == (int) TORFormationClass.Artillery)?.StartUsingMachine(this);
+                    Team.FormationsIncludingSpecialAndEmpty.ToList().FirstOrDefault(form => form.Index == (int) FormationClass.Infantry)?.StartUsingMachine(this);
                 }
             }
             else if(Team?.IsPlayerTeam ?? false)
