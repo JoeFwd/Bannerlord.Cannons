@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.3.0
+Game Versions: v1.2.12
+* feat: infantry formation automatically use cannons
+* refactor(breaking change): change namespace from TOR to Bannerlord.Cannons
+---------------------------------------------------------------------------------------------------
 Version: 0.2.0
 Game Versions: v1.2.12
 * feat: reloader fetches new cannonball if hit while carrying one
