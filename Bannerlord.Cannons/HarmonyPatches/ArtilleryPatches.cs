@@ -1,5 +1,4 @@
 ﻿using Bannerlord.Cannons.BattleMechanics.Artillery;
-using Bannerlord.Cannons.Logging;
 using HarmonyLib;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
@@ -10,8 +9,6 @@ namespace Bannerlord.Cannons.HarmonyPatches
     [HarmonyPatch]
     public class ArtilleryPatches
     {
-        private static readonly ILogger Logger = new ConsoleLoggerFactory().CreateLogger<ArtilleryPatches>();
-        
         [HarmonyPrefix]
         [HarmonyPatch(typeof(RangedSiegeWeapon), "ShootProjectileAux")]
         public static bool OverrideArtilleryShooting(RangedSiegeWeapon __instance, ItemObject missileItem, Agent ____lastShooterAgent)
@@ -25,17 +22,23 @@ namespace Bannerlord.Cannons.HarmonyPatches
             {
                 identity.f = fieldSiegeWeapon.GetBallisticErrorAppliedDirection(1f);
             }
-            else            
+            else
             {
-                if (fieldSiegeWeapon.Target == null) return true;
-                float angle = fieldSiegeWeapon.GetTargetReleaseAngle(fieldSiegeWeapon.Target.SelectedWorldPosition, out Vec3 launchVec);
-                if (angle == float.NegativeInfinity)
+                // Battle AI: custom targeting sets Target.SelectedWorldPosition
+                if (fieldSiegeWeapon.Target != null)
                 {
-                    Logger.Error("Tried to shoot field siege weapon without a valid ballistics solution.");
-                    return true;
+                    Vec3 pos = fieldSiegeWeapon.Target.SelectedWorldPosition;
+                    if (pos == Vec3.Zero) return true;
+                    fieldSiegeWeapon.GetTargetReleaseAngle(pos, out Vec3 launchVec);
+                    if (launchVec == Vec3.Zero) return true;
+                    identity.f = launchVec;
                 }
-
-                identity.f = launchVec;
+                // Siege AI: native RangedSiegeWeaponAi populates LastAiLaunchVector via AimAtThreat
+                else
+                {
+                    if (fieldSiegeWeapon.LastAiLaunchVector == Vec3.Zero) return true;
+                    identity.f = fieldSiegeWeapon.LastAiLaunchVector;
+                }
             }
             
             identity.Orthonormalize();

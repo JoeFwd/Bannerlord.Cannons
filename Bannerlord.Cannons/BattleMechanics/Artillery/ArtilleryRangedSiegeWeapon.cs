@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI;
-using Bannerlord.Cannons.BattleMechanics.AI.TeamAI.FormationBehavior;
 using Bannerlord.Cannons.Extensions;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
@@ -91,7 +90,9 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
 
         public override UsableMachineAIBase CreateAIBehaviorObject()
         {
-            return new FieldSiegeWeaponAI(this);
+            if (Mission.Current?.IsSiegeBattle ?? false)
+                return new FieldSiegeWeaponAI(this);
+            return new FieldBattleWeaponAI(this);
         }
         protected override void OnInit()
         {
@@ -126,11 +127,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         protected override void OnTick(float dt)
         {
             CheckNullReloaderOriginalPoint();
-            if (Target != null || (!PilotAgent?.IsAIControlled ?? false))
-            {
-                base.OnTick(dt);
-            }
-            
+            base.OnTick(dt);
             HandleAnimations();
             HandleAmmoPickup();
             HandleAmmoLoad();

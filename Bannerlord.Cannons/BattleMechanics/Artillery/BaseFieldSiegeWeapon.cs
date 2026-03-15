@@ -1,4 +1,4 @@
-﻿using Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions;
+using Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
@@ -40,17 +40,26 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
 
         public float GetEstimatedCurrentFlightTime()
         {
-            //return 0;
             if (Target == null) return 0;
             var diff = Target.SelectedWorldPosition - MissleStartingPositionForSimulation;
             return Ballistics.GetTimeOfProjectileFlight(ShootingSpeed, currentReleaseAngle, diff.Length);
         }
 
+        /// <summary>
+        /// Populated by GetTargetReleaseAngle as a side effect whenever the native AI calls AimAtThreat.
+        /// Used by the Harmony patch in ShootProjectileAux to apply proper ballistic trajectory.
+        /// </summary>
+        public Vec3 LastAiLaunchVector { get; private set; }
+
         public override float GetTargetReleaseAngle(Vec3 target)
         {
-            float angle = GetTargetReleaseAngle(target, out _);
-            if (angle == float.NaN) angle = base.GetTargetReleaseAngle(target);
-            return angle;
+            float angle = GetTargetReleaseAngle(target, out Vec3 launchVec);
+            if (!float.IsNaN(angle))
+            {
+                LastAiLaunchVector = launchVec;
+                return angle;
+            }
+            return base.GetTargetReleaseAngle(target);
         }
 
         public float GetTargetReleaseAngle(Vec3 target, out Vec3 launchVec)
@@ -81,12 +90,6 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             angle = Vec3.AngleBetweenTwoVectors(forward, dir);
             if (zDiff < 0) angle = -angle;
             return angle;
-        }
-
-        public new Vec3 GetEstimatedTargetMovementVector(Vec3 targetCurrentPosition, Vec3 targetVelocity)
-        {
-            if (targetVelocity == Vec3.Zero) return Vec3.Zero;
-            return targetVelocity * GetEstimatedCurrentFlightTime();
         }
 
         public override bool IsDisabledForBattleSideAI(BattleSideEnum sideEnum)
