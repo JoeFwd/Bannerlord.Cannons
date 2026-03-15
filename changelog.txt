@@ -1,4 +1,8 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.4.0
+Game Versions: v1.2.12
+* feat: use native siege weapon AI for cannons and custom AI for field battles
+---------------------------------------------------------------------------------------------------
 Version: 0.3.0
 Game Versions: v1.2.12
 * feat: infantry formation automatically use cannons
