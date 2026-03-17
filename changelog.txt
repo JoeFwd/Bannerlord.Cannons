@@ -1,4 +1,8 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.4.1
+Game Versions: v1.2.12
+* fix: avoid crash when selecting a game entity in the inspector that has the ArtilleryRangedSiegeWeapon script but is a dynamically created C# subtype
+---------------------------------------------------------------------------------------------------
 Version: 0.4.0
 Game Versions: v1.2.12
 * feat: use native siege weapon AI for cannons and custom AI for field battles
