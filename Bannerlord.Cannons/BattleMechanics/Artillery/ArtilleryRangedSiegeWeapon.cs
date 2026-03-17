@@ -57,7 +57,8 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         public string DisplayName = "Artillery";
         public float BaseMuzzleVelocity = 40f;
         public float SlideBackFrameFactor = 0.6f;
-        public WheelRotationAxis WheelRotationAxis = WheelRotationAxis.X;
+        public string WheelRotationAxis = nameof(Bannerlord.Cannons.BattleMechanics.Artillery.WheelRotationAxis.X);
+        private WheelRotationAxis _wheelRotationAxis = Bannerlord.Cannons.BattleMechanics.Artillery.WheelRotationAxis.X;
         public string CannonShotExplosionEffect;
         private int _fireSoundIndex;
         private int _fireSoundIndex2;
@@ -96,6 +97,8 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         }
         protected override void OnInit()
         {
+            if (!Enum.TryParse(WheelRotationAxis, out _wheelRotationAxis))
+                _wheelRotationAxis = Bannerlord.Cannons.BattleMechanics.Artillery.WheelRotationAxis.X;
             CollectEntities();
             base.OnInit();
             Projectile.SetVisibleSynched(false);
@@ -552,12 +555,12 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             var frame = _wheel_L.GameEntity.GetFrame();
             var frame2 = _wheel_R.GameEntity.GetFrame();
 
-            if (WheelRotationAxis.Equals(WheelRotationAxis.Y))
+            if (_wheelRotationAxis == Bannerlord.Cannons.BattleMechanics.Artillery.WheelRotationAxis.Y)
             {
                 frame.rotation.RotateAboutForward(leftwheeldirection * dt * speed);
                 frame2.rotation.RotateAboutForward(rightwheeldirection * dt * speed);
             }
-            else if (WheelRotationAxis.Equals(WheelRotationAxis.X))
+            else if (_wheelRotationAxis == Bannerlord.Cannons.BattleMechanics.Artillery.WheelRotationAxis.X)
             {
                 frame.rotation.RotateAboutSide(leftwheeldirection * dt * speed);
                 frame2.rotation.RotateAboutSide(rightwheeldirection * dt * speed);
