@@ -9,6 +9,12 @@ namespace Bannerlord.Cannons.HarmonyPatches
     [HarmonyPatch]
     public class ArtilleryPatches
     {
+        private static Vec3 GetPlayerControlledLaunchDirection(BaseFieldSiegeWeapon fieldSiegeWeapon)
+        {
+            // Keep ballistic spread routed through BaseFieldSiegeWeapon's component abstraction.
+            return fieldSiegeWeapon.GetBallisticErrorAppliedDirection(1f);
+        }
+
         [HarmonyPrefix]
         [HarmonyPatch(typeof(RangedSiegeWeapon), "ShootProjectileAux")]
         public static bool OverrideArtilleryShooting(RangedSiegeWeapon __instance, ItemObject missileItem, Agent ____lastShooterAgent)
@@ -20,7 +26,7 @@ namespace Bannerlord.Cannons.HarmonyPatches
             
             if (!____lastShooterAgent.IsAIControlled)
             {
-                identity.f = fieldSiegeWeapon.GetBallisticErrorAppliedDirection(1f);
+                identity.f = GetPlayerControlledLaunchDirection(fieldSiegeWeapon);
             }
             else
             {

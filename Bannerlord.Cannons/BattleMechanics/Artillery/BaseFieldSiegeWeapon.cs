@@ -1,4 +1,5 @@
 using Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions;
+using Bannerlord.Cannons.BattleMechanics.Artillery.Components;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
@@ -8,6 +9,10 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
 {
     public abstract class BaseFieldSiegeWeapon : RangedSiegeWeapon
     {
+        protected IBallisticsService _ballisticsService;
+        protected IFireSafetyChecker _fireSafetyChecker;
+        protected IAmmoPointController _ammoPointController;
+
         public bool PreferHighAngle = false;
         public abstract float ProjectileVelocity { get; }
         private BattleSideEnum _side;
@@ -17,32 +22,46 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         public Team Team { get; set; }
         public void SetTarget(Target target) => Target = target;
         public void ClearTarget() => Target = null;
+
+        protected override void OnInit()
+        {
+            InitialiseComponents();
+            base.OnInit();
+        }
+
+        protected virtual void InitialiseComponents()
+        {
+            _ballisticsService = _ballisticsService ?? new BallisticsService();
+            _fireSafetyChecker = _fireSafetyChecker ?? new FireSafetyChecker();
+            _ammoPointController = _ammoPointController ?? new AmmoPointController();
+        }
+
+        private void EnsureComponentsInitialised()
+        {
+            if (_ballisticsService == null || _fireSafetyChecker == null || _ammoPointController == null)
+            {
+                InitialiseComponents();
+            }
+        }
+
         public bool IsTargetInRange(Vec3 position)
         {
             var startPos = ProjectileEntityCurrentGlobalPosition;
-            var diff = position - startPos;
-            var maxrange = Ballistics.GetMaximumRange(ShootingSpeed, diff.z);
-            diff.z = 0;
-            return diff.Length < maxrange;
+            EnsureComponentsInitialised();
+            return _ballisticsService.IsTargetInRange(startPos, ShootingSpeed, position);
         }
 
         public bool IsSafeToFire()
         {
-            float distanceA, distanceE;
-            Agent agent;
-            using (new TWSharedMutexReadLock(Scene.PhysicsAndRayCastLock))
-            {
-                agent = Mission.Current.RayCastForClosestAgent(MissleStartingPositionForSimulation, MissleStartingPositionForSimulation + ShootingDirection.NormalizedCopy() * 60, out distanceA, -1, 0.05f);
-                Mission.Current.Scene.RayCastForClosestEntityOrTerrainMT(MissleStartingPositionForSimulation, MissleStartingPositionForSimulation + ShootingDirection.NormalizedCopy() * 25, out distanceE, out GameEntity _, 0.05f);
-            }
-            return !(distanceA < 50 && agent != null && !agent.IsEnemyOf(PilotAgent) || distanceE < 15);
+            EnsureComponentsInitialised();
+            return _fireSafetyChecker.IsSafeToFire(Scene, MissleStartingPositionForSimulation, ShootingDirection, PilotAgent);
         }
 
         public float GetEstimatedCurrentFlightTime()
         {
             if (Target == null) return 0;
-            var diff = Target.SelectedWorldPosition - MissleStartingPositionForSimulation;
-            return Ballistics.GetTimeOfProjectileFlight(ShootingSpeed, currentReleaseAngle, diff.Length);
+            EnsureComponentsInitialised();
+            return _ballisticsService.GetEstimatedFlightTime(ShootingSpeed, currentReleaseAngle, MissleStartingPositionForSimulation, Target.SelectedWorldPosition);
         }
 
         /// <summary>
@@ -64,31 +83,14 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
 
         public float GetTargetReleaseAngle(Vec3 target, out Vec3 launchVec)
         {
-            Vec3 low = Vec3.Zero;
-            Vec3 high = Vec3.Zero;
+            EnsureComponentsInitialised();
             launchVec = Vec3.Zero;
-            float angle = 0;
-            int numSolutions = Ballistics.GetLaunchVectorForProjectileToHitTarget(MissleStartingPositionForSimulation, ShootingSpeed, target, out low, out high);
-            if (numSolutions <= 0) return float.NaN;
-
-            if (numSolutions == 2)
+            float angle;
+            if (!_ballisticsService.TryGetReleaseAngle(MissleStartingPositionForSimulation, ShootingSpeed, target, PreferHighAngle, out angle, out launchVec))
             {
-                if (PreferHighAngle) launchVec = high;
-                else launchVec = low;
-            }
-            else
-            {
-                if (low != Vec3.Zero) launchVec = low;
-                else launchVec = high;
+                return float.NaN;
             }
 
-            Vec3 forward = launchVec.NormalizedCopy();
-            forward.z = 0;
-            Vec3 dir = launchVec.NormalizedCopy();
-            Vec3 diff = dir - forward;
-            float zDiff = diff.z;
-            angle = Vec3.AngleBetweenTwoVectors(forward, dir);
-            if (zDiff < 0) angle = -angle;
             return angle;
         }
 
@@ -99,36 +101,14 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
 
         protected void ForceAmmoPointUsage()
         {
-            if (State == WeaponState.LoadingAmmo && !LoadAmmoStandingPoint.HasUser && !LoadAmmoStandingPoint.HasAIMovingTo)
-            {
-                foreach (var sp in AmmoPickUpStandingPoints)
-                {
-                    if (sp.IsDeactivated) sp.SetIsDeactivatedSynched(false);
-                }
-            }
-            else
-            {
-                foreach (var sp in AmmoPickUpStandingPoints)
-                {
-                    if (!sp.IsDeactivated) sp.SetIsDeactivatedSynched(true);
-                }
-            }
+            EnsureComponentsInitialised();
+            _ammoPointController.ForceAmmoPointUsage(State, LoadAmmoStandingPoint, AmmoPickUpStandingPoints);
         }
 
         public Vec3 GetBallisticErrorAppliedDirection(float ballisticErrorAmount)
         {
-            // TODO: refactor it just for our needs -> Copied from RangedSiegeWeapon
-            Mat3 mat3 = new Mat3()
-            {
-                f = this.ShootingDirection,
-                u = Vec3.Up
-            };
-            mat3.Orthonormalize();
-            float a = MBRandom.RandomFloat * 6.28318548f;
-            mat3.RotateAboutForward(a);
-            float f = ballisticErrorAmount * MBRandom.RandomFloat;
-            mat3.RotateAboutSide(f.ToRadians());
-            return mat3.f;
+            EnsureComponentsInitialised();
+            return _ballisticsService.GetBallisticErrorAppliedDirection(ShootingDirection, ballisticErrorAmount);
         }
     }
 }
