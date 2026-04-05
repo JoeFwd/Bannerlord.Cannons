@@ -33,6 +33,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         private ActionIndexCache _loadAmmoBeginAnimationActionIndex;
         private ActionIndexCache _loadAmmoEndAnimationActionIndex;
         private ActionIndexCache _reload2IdleActionIndex;
+        private ActionIndexCache _pushAnimationActionIndex;
         private static readonly ActionIndexCache act_pickup_boulder_begin = ActionIndexCache.Create("act_pickup_boulder_begin");
         private static readonly ActionIndexCache act_pickup_boulder_end = ActionIndexCache.Create("act_pickup_boulder_end");
 
@@ -45,6 +46,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         public string LoadAmmoBeginActionName;
         public string LoadAmmoEndActionName;
         public string Reload2IdleActionName;
+        public string PushActionName;
         #endregion
 
         private readonly string _barrelTag = "Barrel";
@@ -58,6 +60,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         public string DisplayName = "Artillery";
         public float BaseMuzzleVelocity = 40f;
         public float SlideBackFrameFactor = 0.6f;
+        public float WheelRadius = 0.3f;
         public string WheelRotationAxis = nameof(Bannerlord.Cannons.BattleMechanics.Artillery.WheelRotationAxis.X);
         private WheelRotationAxis _wheelRotationAxis = Bannerlord.Cannons.BattleMechanics.Artillery.WheelRotationAxis.X;
         public string CannonShotExplosionEffect;
@@ -72,9 +75,15 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         private MatrixFrame _barrelInitialLocalFrame;
         private Agent? _lastLoaderAgent;
         private StandingPoint? _waitStandingPoint;
+        private StandingPoint? _pushStandingPoint;
         private float _lastCurrentDirection;
         private float _waitTimerStart;
         private bool _waitTimerRunning;
+        private bool _isPushingBack;
+        private bool _isRecoilReturning;
+        private bool _pushAnimationStarted;
+        private Agent? _pushAgent;
+        public string PushStandingPointTag = "push_cannon";
 
         public override float DirectionRestriction => 100f;
         protected override float ShootingSpeed => BaseMuzzleVelocity;
@@ -137,6 +146,8 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         private void InitialisePostBaseInitContext()
         {
             _waitStandingPoint = StandingPoints.FirstOrDefault(sp => sp.GameEntity.HasTag(WaitStandingPointTag));
+            _pushStandingPoint = StandingPoints.FirstOrDefault(sp => sp.GameEntity.HasTag(PushStandingPointTag));
+            _pushStandingPoint?.SetIsDeactivatedSynched(true);
             _barrelInitialLocalFrame = _cannonEntities.Barrel.GameEntity.GetFrame();
 
             GameEntity? projectileEntity = Projectile?.GameEntity;
@@ -155,7 +166,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         private void InitialiseOrchestratorComponents()
         {
             _wheelAnimator = new WheelAnimator(_cannonEntities.WheelL, _cannonEntities.WheelR, _wheelRotationAxis);
-            _recoilEffect = new RecoilEffect(_cannonEntities.Body, _wheelAnimator, RecoilDuration, Recoil2Duration, SlideBackFrameFactor);
+            _recoilEffect = new RecoilEffect(_cannonEntities.Body, _wheelAnimator, RecoilDuration, Recoil2Duration, SlideBackFrameFactor, WheelRadius);
             _fireEffectsPlayer = new FireEffectsPlayer();
             _ammoPickupHandler = new AmmoPickupHandler();
             _ammoLoadHandler = new AmmoLoadHandler();
@@ -183,6 +194,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             _loadAmmoBeginAnimationActionIndex = ActionIndexCache.Create(LoadAmmoBeginActionName);
             _loadAmmoEndAnimationActionIndex = ActionIndexCache.Create(LoadAmmoEndActionName);
             _reload2IdleActionIndex = ActionIndexCache.Create(Reload2IdleActionName);
+            _pushAnimationActionIndex = ActionIndexCache.Create(PushActionName);
         }
 
         // --- Tick ---
@@ -196,6 +208,8 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             ForceAmmoPointUsage();
             HandleWaitingTimer();
             UpdateRecoilEffect(dt);
+            HandlePushBack();
+            HandleRecoilReturn(dt);
             // UpdateWheelRotation(dt);
             HandleAITeamUsage();
         }
@@ -220,7 +234,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             if (State != WeaponState.WaitingBeforeIdle || Mission.Current == null)
                 return;
 
-            if (_waitTimerRunning && Mission.Current.CurrentTime >= _waitTimerStart + 2f)
+            if (_waitTimerRunning && !_isPushingBack && !_isRecoilReturning && Mission.Current.CurrentTime >= _waitTimerStart + 2f)
             {
                 _waitTimerRunning = false;
                 State = WeaponState.Idle;
@@ -270,8 +284,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
                     DoSlideBack();
                     break;
                 case WeaponState.WaitingBeforeIdle:
-                    SendLoaderAgentToWaitingPoint();
-                    SetWaitingTimer();
+                    StartPushBackPhase();
                     break;
                 case WeaponState.LoadingAmmo:
                     SetActivationWaitingPoint(false);
@@ -308,6 +321,78 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             _waitTimerRunning = true;
         }
 
+        private void StartPushBackPhase()
+        {
+            _pushAnimationStarted = false;
+            if (_pushStandingPoint == null)
+            {
+                // No push point in scene — skip phase and go straight to return
+                _isRecoilReturning = true;
+                _recoilEffect.BeginReturn();
+                return;
+            }
+            _isPushingBack = true;
+            SetActivationPushPoint(true);
+            if (_lastLoaderAgent?.IsAIControlled ?? false)
+                _lastLoaderAgent.AIMoveToGameObjectEnable(_pushStandingPoint, this, Agent.AIScriptedFrameFlags.NoAttack);
+        }
+
+        private void HandlePushBack()
+        {
+            if (!_isPushingBack || _pushStandingPoint == null) return;
+
+            if (_pushStandingPoint.HasUser)
+            {
+                var user = _pushStandingPoint.UserAgent;
+                _pushAgent = user;
+
+                if (!_pushAnimationStarted)
+                {
+                    if (user.SetActionChannel(1, _pushAnimationActionIndex))
+                        _pushAnimationStarted = true;
+                    else
+                        user.StopUsingGameObject(true); // can't play — release agent immediately
+                }
+                else if (user.GetCurrentAction(1) != _pushAnimationActionIndex)
+                {
+                    // Animation finished (or interrupted) — release agent
+                    user.StopUsingGameObject(true);
+                }
+                // else: animation still in progress — wait
+            }
+            else if (_pushAgent != null)
+            {
+                // Agent left the point — push complete
+                _pushAgent = null;
+                _pushAnimationStarted = false;
+                CompletePushAnimation();
+            }
+        }
+
+        private void CompletePushAnimation()
+        {
+            _isPushingBack = false;
+            _pushAnimationStarted = false;
+            SetActivationPushPoint(false);
+            _isRecoilReturning = true;
+            _recoilEffect.BeginReturn();
+        }
+
+        private void HandleRecoilReturn(float dt)
+        {
+            if (!_isRecoilReturning) return;
+
+            if (_recoilEffect.UpdateReturn(dt))
+            {
+                _isRecoilReturning = false;
+                SendLoaderAgentToWaitingPoint();
+                SetWaitingTimer();
+            }
+        }
+
+        private void SetActivationPushPoint(bool activate)
+            => _pushStandingPoint?.SetIsDeactivatedSynched(!activate);
+
         private void PlayFireProjectileEffects()
         {
             MatrixFrame frame = MissileStartingPositionEntityForSimulation.GetGlobalFrame();
@@ -339,6 +424,8 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
                 textObject = new TextObject("{=Na81xuXn}{KEY} Reload");
             else if (usableGameObject.GameEntity.HasTag(AmmoPickUpTag))
                 textObject = new TextObject("{=bNYm3K6b}{KEY} Pick Up");
+            else if (usableGameObject.GameEntity.HasTag(PushStandingPointTag))
+                textObject = new TextObject("{=cannon_push}{KEY} Push Cannon");
             else
                 textObject = new TextObject("{=fEQAPJ2e}{KEY} Use");
 
