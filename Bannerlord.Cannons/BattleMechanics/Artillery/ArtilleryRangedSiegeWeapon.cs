@@ -55,7 +55,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         private readonly string _rightWheelTag = "Wheel_R";
         public string FireSoundID = "mortar_shot_1";
         public string FireSoundID2 = "mortar_shot_2";
-        public float RecoilDuration = 0.1f;
+        public float RecoilDuration = 0.35f;
         public float Recoil2Duration = 0.8f;
         public string DisplayName = "Artillery";
         public float BaseMuzzleVelocity = 40f;
