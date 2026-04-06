@@ -67,9 +67,10 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery.Components
                 return true;
             }
 
-            // Smoothstep: 3t^2 - 2t^3 — eases in then out, mirrors the return push feel
+            // Ease-out cubic: 1 - (1 - t)^3 — explosive start, slows toward the end
             float t = _recoilTimer / _recoilDuration;
-            float tEased = t * t * (3f - 2f * t);
+            float oneMinusT = 1f - t;
+            float tEased = 1f - (oneMinusT * oneMinusT * oneMinusT);
 
             MatrixFrame frame = MatrixFrame.Lerp(_slideBackFrameOrig, _slideBackFrame, tEased);
 
@@ -79,8 +80,8 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery.Components
 
             _body.GameEntity.SetFrame(ref frame);
 
-            // d/dt[smoothstep] via chain rule = 6t(1-t) / _recoilDuration
-            float angularVelocity = _slideDistance * 6f * t * (1f - t) / (_recoilDuration * _wheelRadius);
+            // d/dt[easeOutCubic] via chain rule = 3(1-t)^2 / _recoilDuration
+            float angularVelocity = _slideDistance * 3f * oneMinusT * oneMinusT / (_recoilDuration * _wheelRadius);
             _wheelAnimator.Rotate(dt, 1f, 1f, angularVelocity);
 
             return false;
