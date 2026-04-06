@@ -240,7 +240,14 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
 
         private void CheckNullReloaderOriginalPoint()
         {
-            if (ReloaderAgentOriginalPoint == null && ReloaderAgent != null)
+            if (ReloaderAgent == null)
+                return;
+
+            bool isInvalidForDetachment = !ReloaderAgent.IsActive()
+                                          || ReloaderAgent.Team == null
+                                          || ReloaderAgent.Detachment != this;
+
+            if (ReloaderAgentOriginalPoint == null || isInvalidForDetachment)
             {
                 ReloaderAgent.StopUsingGameObject(true);
                 ReloaderAgent = null;
@@ -312,7 +319,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
 
         private void SendLoaderAgentToWaitingPoint()
         {
-            if (_waitStandingPoint != null && (_lastLoaderAgent?.IsAIControlled ?? false) && _lastLoaderAgent.IsActive())
+            if (_waitStandingPoint != null && CanUseAsMachineMover(_lastLoaderAgent))
             {
                 SetActivationWaitingPoint(true);
                 _lastLoaderAgent.AIMoveToGameObjectEnable(_waitStandingPoint, this, Agent.AIScriptedFrameFlags.NoAttack);
@@ -351,9 +358,15 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             }
             _isPushingBack = true;
             SetActivationPushPoint(true);
-            if ((_lastLoaderAgent?.IsAIControlled ?? false) && _lastLoaderAgent.IsActive())
+            if (CanUseAsMachineMover(_lastLoaderAgent))
                 _lastLoaderAgent.AIMoveToGameObjectEnable(_pushStandingPoint, this, Agent.AIScriptedFrameFlags.NoAttack);
         }
+
+        private bool CanUseAsMachineMover(Agent? agent)
+            => agent is { IsAIControlled: true }
+               && agent.IsActive()
+               && agent.Team != null
+               && agent.Detachment == this;
 
         private void HandlePushBack()
         {

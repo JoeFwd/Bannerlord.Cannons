@@ -30,6 +30,13 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery.Components
             ActionIndexCache loadAmmoEndAction,
             UsableMachine machine)
         {
+            static bool CanIssueScriptedMove(Agent candidate, UsableMachine usableMachine)
+                => candidate != null
+                   && candidate.IsAIControlled
+                   && candidate.IsActive()
+                   && candidate.Team != null
+                   && candidate.Detachment == usableMachine;
+
             foreach (var sp in pickupPoints)
             {
                 if (sp is StandingPointWithWeaponRequirement point && point.HasUser)
@@ -45,7 +52,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery.Components
                             user.EquipWeaponToExtraSlotAndWield(ref missionWeapon);
                             user.StopUsingGameObject(true, Agent.StopUsingGameObjectFlags.None);
 
-                            if (user.IsAIControlled)
+                            if (CanIssueScriptedMove(user, machine))
                             {
                                 if (!loadAmmoPoint.HasUser && !loadAmmoPoint.IsDeactivated)
                                 {

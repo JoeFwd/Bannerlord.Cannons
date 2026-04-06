@@ -8,6 +8,9 @@ public class AmmoPickUpStandingPoint : StandingPointWithWeaponRequirement
     
     public override bool IsDisabledForAgent(Agent agent)
     {
+        if (agent == null || !agent.IsActive() || agent.Team == null)
+            return true;
+
         return !_artilleryCrewProvider.IsArtilleryCrew(agent) || base.IsDisabledForAgent(agent);
     }
 }
