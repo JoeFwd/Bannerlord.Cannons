@@ -124,6 +124,24 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             PilotStandingPoint.AddComponent(new ClearHandInverseKinematicsOnStopUsageComponent());
             _lastCurrentDirection = currentDirection;
             ApplyAimChange();
+
+            Mission.Current.OnBeforeAgentRemoved += OnBeforeAgentRemoved;
+        }
+
+        protected override void OnRemoved(int removeReason)
+        {
+            base.OnRemoved(removeReason);
+            if (Mission.Current != null)
+                Mission.Current.OnBeforeAgentRemoved -= OnBeforeAgentRemoved;
+        }
+
+        private void OnBeforeAgentRemoved(Agent affectedAgent, Agent affectorAgent, AgentState agentState, KillingBlow killingBlow)
+        {
+            if (_lastLoaderAgent == affectedAgent)
+                _lastLoaderAgent = null;
+
+            if (_pushAgent == affectedAgent && _isPushingBack)
+                CompletePushAnimation();
         }
 
         private void BuildInitContext()
@@ -294,7 +312,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
 
         private void SendLoaderAgentToWaitingPoint()
         {
-            if (_waitStandingPoint != null && (_lastLoaderAgent?.IsAIControlled ?? false))
+            if (_waitStandingPoint != null && (_lastLoaderAgent?.IsAIControlled ?? false) && _lastLoaderAgent.IsActive())
             {
                 SetActivationWaitingPoint(true);
                 _lastLoaderAgent.AIMoveToGameObjectEnable(_waitStandingPoint, this, Agent.AIScriptedFrameFlags.NoAttack);
@@ -333,7 +351,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             }
             _isPushingBack = true;
             SetActivationPushPoint(true);
-            if (_lastLoaderAgent?.IsAIControlled ?? false)
+            if ((_lastLoaderAgent?.IsAIControlled ?? false) && _lastLoaderAgent.IsActive())
                 _lastLoaderAgent.AIMoveToGameObjectEnable(_pushStandingPoint, this, Agent.AIScriptedFrameFlags.NoAttack);
         }
 
@@ -467,5 +485,6 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         {
             LoadAmmoStandingPoint.SetIsDeactivatedSynched(!activate);
         }
+
     }
 }
