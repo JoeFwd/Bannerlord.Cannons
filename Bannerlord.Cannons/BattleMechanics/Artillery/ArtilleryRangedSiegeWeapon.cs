@@ -55,10 +55,11 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         private readonly string _rightWheelTag = "Wheel_R";
         public string FireSoundID = "mortar_shot_1";
         public string FireSoundID2 = "mortar_shot_2";
-        public float RecoilDuration = 0.35f;
+        public float RecoilDuration = 0.8f;
         public float Recoil2Duration = 0.8f;
         public string DisplayName = "Artillery";
         public float BaseMuzzleVelocity = 40f;
+        public float RecoilDistance = 0.6f;
         public float SlideBackFrameFactor = 0.6f;
         public float WheelRadius = 0.3f;
         public string WheelRotationAxis = nameof(Bannerlord.Cannons.BattleMechanics.Artillery.WheelRotationAxis.X);
@@ -184,11 +185,24 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         private void InitialiseOrchestratorComponents()
         {
             _wheelAnimator = new WheelAnimator(_cannonEntities.WheelL, _cannonEntities.WheelR, _wheelRotationAxis);
-            _recoilEffect = new RecoilEffect(_cannonEntities.Body, _wheelAnimator, RecoilDuration, Recoil2Duration, SlideBackFrameFactor, WheelRadius);
+            float recoilDistance = ResolveRecoilDistance();
+            _recoilEffect = new RecoilEffect(_cannonEntities.Body, _wheelAnimator, RecoilDuration, Recoil2Duration, recoilDistance, WheelRadius);
             _fireEffectsPlayer = new FireEffectsPlayer();
             _ammoPickupHandler = new AmmoPickupHandler();
             _ammoLoadHandler = new AmmoLoadHandler();
             _aiFormationManager = new AIFormationManager(_artilleryCrewProvider);
+        }
+
+        private float ResolveRecoilDistance()
+        {
+            if (RecoilDistance > 0f)
+                return RecoilDistance;
+
+            // legacy => remove in next major version
+            if (SlideBackFrameFactor > 0f)
+                return SlideBackFrameFactor;
+
+            return 0.6f;
         }
 
         protected override void ApplyAimChange()
