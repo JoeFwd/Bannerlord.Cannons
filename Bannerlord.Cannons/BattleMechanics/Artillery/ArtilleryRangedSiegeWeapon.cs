@@ -195,7 +195,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         {
             base.ApplyAimChange();
             MatrixFrame barrelFrame = _barrelInitialLocalFrame;
-            barrelFrame.rotation.RotateAboutSide(-currentReleaseAngle + _verticalOffsetAngle);
+            barrelFrame.rotation.RotateAboutSide(currentReleaseAngle + _verticalOffsetAngle);
             _cannonEntities.Barrel.GameEntity.SetFrame(ref barrelFrame);
         }
 
