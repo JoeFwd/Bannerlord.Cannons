@@ -1,3 +1,4 @@
+using System;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
@@ -15,10 +16,10 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery.Components
     {
         private readonly SynchedMissionObject _body;
         private readonly IWheelAnimator _wheelAnimator;
-        private readonly float _recoilDuration;
-        private readonly float _recoil2Duration;
-        private readonly float _slideBackFrameFactor;
-        private readonly float _wheelRadius;
+        private readonly Func<float> _recoilDuration;
+        private readonly Func<float> _recoil2Duration;
+        private readonly Func<float> _slideBackFrameFactor;
+        private readonly Func<float> _wheelRadius;
 
         private MatrixFrame _slideBackFrameOrig;
         private MatrixFrame _slideBackFrame;
@@ -31,10 +32,10 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery.Components
         public RecoilEffect(
             SynchedMissionObject body,
             IWheelAnimator wheelAnimator,
-            float recoilDuration,
-            float recoil2Duration,
-            float slideBackFrameFactor,
-            float wheelRadius)
+            Func<float> recoilDuration,
+            Func<float> recoil2Duration,
+            Func<float> slideBackFrameFactor,
+            Func<float> wheelRadius)
         {
             _body = body;
             _wheelAnimator = wheelAnimator;
@@ -48,7 +49,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery.Components
         public void Begin(MatrixFrame bodyFrame)
         {
             _slideBackFrameOrig = bodyFrame;
-            _slideBackFrame = bodyFrame.Advance(-_slideBackFrameFactor);
+            _slideBackFrame = bodyFrame.Advance(-_slideBackFrameFactor());
             _slideDistance = (_slideBackFrame.origin - _slideBackFrameOrig.origin).Length;
             _recoilTimer = 0f;
             _active = true;
@@ -61,14 +62,15 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery.Components
 
             _recoilTimer += dt;
 
-            if (_recoilTimer >= _recoilDuration)
+            float recoilDuration = _recoilDuration();
+            if (_recoilTimer >= recoilDuration)
             {
                 _active = false;
                 return true;
             }
 
             // Ease-out cubic: 1 - (1 - t)^3 — explosive start, slows toward the end
-            float t = _recoilTimer / _recoilDuration;
+            float t = _recoilTimer / recoilDuration;
             float oneMinusT = 1f - t;
             float tEased = 1f - (oneMinusT * oneMinusT * oneMinusT);
 
@@ -81,7 +83,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery.Components
             _body.GameEntity.SetFrame(ref frame);
 
             // d/dt[easeOutCubic] via chain rule = 3(1-t)^2 / _recoilDuration
-            float angularVelocity = _slideDistance * 3f * oneMinusT * oneMinusT / (_recoilDuration * _wheelRadius);
+            float angularVelocity = _slideDistance * 3f * oneMinusT * oneMinusT / (recoilDuration * _wheelRadius());
             _wheelAnimator.Rotate(dt, 1f, 1f, angularVelocity);
 
             return false;
@@ -101,7 +103,8 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery.Components
 
             _returnTimer += dt;
 
-            if (_returnTimer >= _recoil2Duration)
+            float recoil2Duration = _recoil2Duration();
+            if (_returnTimer >= recoil2Duration)
             {
                 _returning = false;
                 var orig = _slideBackFrameOrig;
@@ -110,14 +113,14 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery.Components
             }
 
             // Smoothstep: 3t^2 - 2t^3 — eases in then out, feels like a deliberate push
-            float t = _returnTimer / _recoil2Duration;
+            float t = _returnTimer / recoil2Duration;
             float tEased = t * t * (3f - 2f * t);
 
             MatrixFrame frame = MatrixFrame.Lerp(_slideBackFrame, _slideBackFrameOrig, tEased);
             _body.GameEntity.SetFrame(ref frame);
 
             // d/dt[smoothstep] via chain rule = 6t(1-t) / _recoil2Duration
-            float angularVelocity = _slideDistance * 6f * t * (1f - t) / (_recoil2Duration * _wheelRadius);
+            float angularVelocity = _slideDistance * 6f * t * (1f - t) / (recoil2Duration * _wheelRadius());
             _wheelAnimator.Rotate(dt, -1f, -1f, angularVelocity);
 
             return false;

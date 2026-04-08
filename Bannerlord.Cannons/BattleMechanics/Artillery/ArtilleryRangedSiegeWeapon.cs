@@ -63,7 +63,6 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         public float SlideBackFrameFactor = 0.6f;
         public float WheelRadius = 0.3f;
         public string WheelRotationAxis = nameof(Bannerlord.Cannons.BattleMechanics.Artillery.WheelRotationAxis.X);
-        private WheelRotationAxis _wheelRotationAxis = Bannerlord.Cannons.BattleMechanics.Artillery.WheelRotationAxis.X;
         public string CannonShotExplosionEffect;
         private CannonEntities _cannonEntities = null!;
         private IRecoilEffect _recoilEffect = null!;
@@ -103,10 +102,13 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
 
         // --- Init ---
 
+        private WheelRotationAxis GetWheelRotationAxis() =>
+            Enum.TryParse(WheelRotationAxis, out WheelRotationAxis axis)
+                ? axis
+                : Bannerlord.Cannons.BattleMechanics.Artillery.WheelRotationAxis.X;
+
         protected override void OnInit()
         {
-            if (!Enum.TryParse(WheelRotationAxis, out _wheelRotationAxis))
-                _wheelRotationAxis = Bannerlord.Cannons.BattleMechanics.Artillery.WheelRotationAxis.X;
 
             _artilleryCrewProvider = ArtilleryCrewProviderFactory.CreateArtilleryCrewProvider();
             _targetingPolicy = CreateTargetingPolicy();
@@ -184,9 +186,12 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
 
         private void InitialiseOrchestratorComponents()
         {
-            _wheelAnimator = new WheelAnimator(_cannonEntities.WheelL, _cannonEntities.WheelR, _wheelRotationAxis);
-            float recoilDistance = ResolveRecoilDistance();
-            _recoilEffect = new RecoilEffect(_cannonEntities.Body, _wheelAnimator, RecoilDuration, Recoil2Duration, recoilDistance, WheelRadius);
+            _wheelAnimator = new WheelAnimator(_cannonEntities.WheelL, _cannonEntities.WheelR, GetWheelRotationAxis);
+            _recoilEffect = new RecoilEffect(_cannonEntities.Body, _wheelAnimator,
+                () => RecoilDuration,
+                () => Recoil2Duration,
+                ResolveRecoilDistance,
+                () => WheelRadius);
             _fireEffectsPlayer = new FireEffectsPlayer();
             _ammoPickupHandler = new AmmoPickupHandler();
             _ammoLoadHandler = new AmmoLoadHandler();

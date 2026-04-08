@@ -1,3 +1,4 @@
+using System;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
@@ -12,12 +13,12 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery.Components
     {
         private readonly SynchedMissionObject _wheelL;
         private readonly SynchedMissionObject _wheelR;
-        private readonly WheelRotationAxis _axis;
+        private readonly Func<WheelRotationAxis> _axis;
 
         public WheelAnimator(
             SynchedMissionObject wheelL,
             SynchedMissionObject wheelR,
-            WheelRotationAxis axis)
+            Func<WheelRotationAxis> axis)
         {
             _wheelL = wheelL;
             _wheelR = wheelR;
@@ -30,7 +31,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery.Components
             MatrixFrame frameL = _wheelL.GameEntity.GetFrame();
             MatrixFrame frameR = _wheelR.GameEntity.GetFrame();
 
-            if (_axis == WheelRotationAxis.Y)
+            if (_axis() == WheelRotationAxis.Y)
             {
                 frameL.rotation.RotateAboutForward(leftDir  * dt * speed);
                 frameR.rotation.RotateAboutForward(rightDir * dt * speed);
