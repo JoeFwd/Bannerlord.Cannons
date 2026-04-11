@@ -84,8 +84,9 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         private bool _pushAnimationStarted;
         private Agent? _pushAgent;
         public string PushStandingPointTag = "push_cannon";
+        public float DirectionRestrictionDegrees = 100f;
 
-        public override float DirectionRestriction => 100f;
+        public override float DirectionRestriction => DirectionRestrictionDegrees * (MathF.PI / 180f);
         protected override float ShootingSpeed => BaseMuzzleVelocity;
         public override float ProjectileVelocity => ShootingSpeed;
         protected override Vec3 ShootingDirection => Projectile.GameEntity.GetGlobalFrame().rotation.f;
