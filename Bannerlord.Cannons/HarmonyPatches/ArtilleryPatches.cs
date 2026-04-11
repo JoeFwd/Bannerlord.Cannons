@@ -63,6 +63,28 @@ namespace Bannerlord.Cannons.HarmonyPatches
             return false;
         }
 
+        // [HarmonyPrefix]
+        // [HarmonyPatch(typeof(RangedSiegeWeapon), "AimAtTarget")]
+        // public static bool UseAimFrameWhenAiming(RangedSiegeWeapon __instance, Vec3 target, ref bool __result)
+        // {
+        //     if (__instance is not BaseFieldSiegeWeapon fieldSiegeWeapon)
+        //         return true;
+        //
+        //     __result = fieldSiegeWeapon.AimAtTargetUsingAimFrame(target);
+        //     return false;
+        // }
+
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(RangedSiegeWeapon), "CanShootAtPoint")]
+        public static bool UseAimFrameWhenCheckingShot(RangedSiegeWeapon __instance, Vec3 target, ref bool __result)
+        {
+            if (__instance is not BaseFieldSiegeWeapon fieldSiegeWeapon)
+                return true;
+
+            __result = fieldSiegeWeapon.CanShootAtPointUsingAimFrame(target);
+            return false;
+        }
+
         [HarmonyPostfix]
         [HarmonyPatch(typeof(ItemObject), "GetAirFrictionConstant")]
         public static void OverrideAirFrictionForCannonBall(ref float __result, WeaponClass weaponClass)

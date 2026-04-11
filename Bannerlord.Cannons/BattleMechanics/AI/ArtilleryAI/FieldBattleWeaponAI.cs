@@ -98,14 +98,93 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
             */
             foreach (Formation formation in GetUnemployedEnemyFormations())
             {
+                Vec3 candidatePosition = GetCandidateTargetPosition(formation);
+                if (candidatePosition == Vec3.Zero || !_fieldSiegeWeapon.IsTargetWithinDirectionRestriction(candidatePosition))
+                    continue;
+
                 Target targetFormation = GetTargetValueOfFormation(formation);
-                if (targetFormation.UtilityValue != -1f && _fieldSiegeWeapon.IsTargetInRange(targetFormation.GetPosition()))
+                targetFormation.SelectedWorldPosition = candidatePosition;
+                if (targetFormation.UtilityValue != -1f && _fieldSiegeWeapon.IsTargetInRange(candidatePosition))
                 {
                     list.Add(targetFormation);
                 }
             }
 
             return list;
+        }
+
+        private Vec3 GetCandidateTargetPosition(Formation formation)
+        {
+            if (formation == null)
+                return Vec3.Zero;
+
+            Vec3 velocity = formation.QuerySystem.CurrentVelocity.ToVec3();
+            float time = _fieldSiegeWeapon.Target == null
+                ? 0f
+                : _fieldSiegeWeapon.GetEstimatedCurrentFlightTime();
+
+            Vec3 bestPosition = Vec3.Zero;
+            float bestHorizontalAngle = float.MaxValue;
+
+            foreach (Vec3 sample in GetFormationTargetSamples(formation))
+            {
+                Vec3 candidate = sample + velocity * time;
+                if (candidate == Vec3.Zero || !_fieldSiegeWeapon.IsTargetInRange(candidate))
+                    continue;
+
+                if (!_fieldSiegeWeapon.TryGetAbsoluteHorizontalAngleToTarget(candidate, out float absoluteLocalTargetDirection))
+                    continue;
+
+                if (!_fieldSiegeWeapon.IsTargetWithinDirectionRestriction(candidate))
+                    continue;
+
+                if (absoluteLocalTargetDirection < bestHorizontalAngle)
+                {
+                    bestHorizontalAngle = absoluteLocalTargetDirection;
+                    bestPosition = candidate;
+                }
+            }
+
+            return bestPosition;
+        }
+
+        private IEnumerable<Vec3> GetFormationTargetSamples(Formation formation)
+        {
+            Vec3 averagePosition = formation.GetAveragePositionOfUnits(false, false).ToVec3();
+            if (averagePosition != Vec3.Zero)
+                yield return averagePosition;
+
+            Agent medianAgent = formation.GetMedianAgent(false, false, formation.GetAveragePositionOfUnits(false, false));
+            if (medianAgent != null)
+                yield return medianAgent.Position;
+
+            Vec3 currentPosition = formation.CurrentPosition.ToVec3();
+            if (currentPosition != Vec3.Zero)
+                yield return currentPosition;
+
+            Vec2 forward = formation.QuerySystem.EstimatedDirection;
+            if (forward.LengthSquared < 0.0001f)
+                yield break;
+
+            forward = forward.Normalized();
+            Vec2 right = forward.RightVec().Normalized();
+
+            float halfWidth = formation.Width * 0.5f;
+            float halfDepth = formation.Depth * 0.5f;
+            float widthStep = MathF.Max(halfWidth, 1f);
+            float depthStep = MathF.Max(halfDepth, 1f);
+            Vec3 anchor = averagePosition != Vec3.Zero ? averagePosition : currentPosition;
+            if (anchor == Vec3.Zero)
+                yield break;
+
+            yield return anchor + right.ToVec3() * widthStep;
+            yield return anchor - right.ToVec3() * widthStep;
+            yield return anchor + forward.ToVec3() * depthStep;
+            yield return anchor - forward.ToVec3() * depthStep;
+            yield return anchor + right.ToVec3() * widthStep + forward.ToVec3() * depthStep;
+            yield return anchor + right.ToVec3() * widthStep - forward.ToVec3() * depthStep;
+            yield return anchor - right.ToVec3() * widthStep + forward.ToVec3() * depthStep;
+            yield return anchor - right.ToVec3() * widthStep - forward.ToVec3() * depthStep;
         }
 
         private Target GetTargetValueOfFormation(Formation formation)

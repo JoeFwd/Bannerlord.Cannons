@@ -110,5 +110,113 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             EnsureComponentsInitialised();
             return _ballisticsService.GetBallisticErrorAppliedDirection(ShootingDirection, ballisticErrorAmount);
         }
+
+        public void CalculateLocalAnglesFromAimFrame(Vec3 globalDirection, out float localTargetDirection, out float localTargetAngle)
+        {
+            globalDirection.Normalize();
+            Vec2 aimDirection = ShootingDirection.AsVec2;
+            if (aimDirection.LengthSquared < 0.0001f)
+            {
+                aimDirection = (RotationObject?.GameEntity?.GetGlobalFrame().rotation.f ?? GameEntity.GetGlobalFrame().rotation.f).AsVec2;
+            }
+
+            if (aimDirection.LengthSquared < 0.0001f)
+            {
+                localTargetDirection = 0f;
+                localTargetAngle = 0f;
+                return;
+            }
+
+            aimDirection = aimDirection.Normalized();
+            Vec2 targetDirection = globalDirection.AsVec2;
+            if (targetDirection.LengthSquared < 0.0001f)
+            {
+                localTargetDirection = 0f;
+                localTargetAngle = MathF.PI / 2f;
+                return;
+            }
+
+            targetDirection = targetDirection.Normalized();
+            float aimYaw = aimDirection.RotationInRadians;
+            float targetYaw = targetDirection.RotationInRadians;
+            localTargetDirection = MBMath.WrapAngle(targetYaw - aimYaw);
+            localTargetAngle = MathF.Atan2(globalDirection.Z, targetDirection.Length);
+        }
+
+        public bool AimAtTargetUsingAimFrame(Vec3 target)
+        {
+            if (!TryCalculateLocalDirectionAndLocalAngleToShootTargetUsingAimFrame(target, out float localTargetDirection, out float localTargetAngle))
+                return false;
+
+            if (localTargetDirection >= MathF.PI)
+                return false;
+
+            GiveExactInput(localTargetDirection, localTargetAngle);
+            return MathF.Abs(currentDirection - localTargetDirection) < 0.001f
+                   && MathF.Abs(currentReleaseAngle - localTargetAngle) < 0.001f;
+        }
+
+        public bool CanShootAtPointUsingAimFrame(Vec3 target)
+        {
+            if (!TryCalculateLocalDirectionAndLocalAngleToShootTargetUsingAimFrame(target, out float localTargetDirection, out float localTargetAngle))
+                return false;
+
+            return IsAngleWithinRestrictions(localTargetDirection, localTargetAngle) && IsTargetInRange(target);
+        }
+
+        public bool IsTargetWithinDirectionRestriction(Vec3 target)
+        {
+            if (!TryCalculateLocalDirectionAndLocalAngleToShootTargetUsingAimFrame(target, out float localTargetDirection, out float localTargetAngle))
+                return false;
+
+            return IsAngleWithinRestrictions(localTargetDirection, localTargetAngle);
+        }
+
+        public bool TryGetAbsoluteHorizontalAngleToTarget(Vec3 target, out float absoluteLocalTargetDirection)
+        {
+            absoluteLocalTargetDirection = MathF.PI;
+            if (!TryCalculateLocalDirectionAndLocalAngleToShootTargetUsingAimFrame(target, out float localTargetDirection, out _))
+                return false;
+
+            absoluteLocalTargetDirection = MathF.Abs(localTargetDirection);
+            return true;
+        }
+
+        private bool TryCalculateLocalDirectionAndLocalAngleToShootTargetUsingAimFrame(
+            Vec3 target,
+            out float localTargetDirection,
+            out float localTargetAngle)
+        {
+            float targetReleaseAngle = GetTargetReleaseAngle(target);
+            if (float.IsNaN(targetReleaseAngle) || float.IsInfinity(targetReleaseAngle) || targetReleaseAngle > MathF.PI / 2f)
+            {
+                localTargetDirection = MathF.PI;
+                localTargetAngle = MathF.PI;
+                return false;
+            }
+
+            Vec2 horizontalDirection = (target - MissleStartingPositionForSimulation).AsVec2.Normalized();
+            if (horizontalDirection.LengthSquared < 0.0001f)
+            {
+                localTargetDirection = 0f;
+                localTargetAngle = targetReleaseAngle;
+                return true;
+            }
+
+            Vec3 globalDirection = new Vec3(horizontalDirection.x, horizontalDirection.y, 0f);
+            globalDirection += new Vec3(0f, 0f, MathF.Sin(targetReleaseAngle));
+            globalDirection.Normalize();
+
+            CalculateLocalAnglesFromAimFrame(globalDirection, out localTargetDirection, out localTargetAngle);
+            return !(float.IsNaN(localTargetDirection) || float.IsNaN(localTargetAngle));
+        }
+
+        private bool IsAngleWithinRestrictions(float localTargetDirection, float localTargetAngle)
+        {
+            if (localTargetAngle < BottomReleaseAngleRestriction || localTargetAngle > TopReleaseAngleRestriction)
+                return false;
+
+            return DirectionRestriction / 2f - MathF.Abs(localTargetDirection) >= 0f;
+        }
     }
 }
