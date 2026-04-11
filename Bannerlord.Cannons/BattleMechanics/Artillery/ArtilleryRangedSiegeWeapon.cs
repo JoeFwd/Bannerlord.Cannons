@@ -211,6 +211,25 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             return 0.6f;
         }
 
+        protected override void HandleUserAiming(float dt)
+        {
+            float prevTargetDirection = targetDirection;
+            base.HandleUserAiming(dt);
+
+            // Fix for 360° rotation: the engine's ApproachToAngle uses raw subtraction
+            // (not angle-aware arithmetic). When TargetDirection crosses the ±π boundary
+            // and WrapAngle flips its sign, ApproachToAngle sees a huge raw difference and
+            // rotates in the wrong direction (the "bounce"). Fix: when a wrap-around is
+            // detected, shift currentDirection by ±2π so it stays on the same side as
+            // TargetDirection. RotateAboutAnArbitraryVector uses cos/sin which are periodic,
+            // so the entity rotation is visually identical.
+            float targetJump = targetDirection - prevTargetDirection;
+            if (targetJump < -MathF.PI)
+                currentDirection -= 2f * MathF.PI;
+            else if (targetJump > MathF.PI)
+                currentDirection += 2f * MathF.PI;
+        }
+
         protected override void ApplyAimChange()
         {
             base.ApplyAimChange();
