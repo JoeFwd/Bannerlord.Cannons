@@ -101,14 +101,13 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
 
         /// <summary>
         /// Yields a set of representative positions across the formation: centre,
-        /// median agent, current position, and eight bounding-box corners.
+        /// median agent, current position, and agents sampled near each flank/edge.
+        /// All positions correspond to actual agents so phantom geometry outside the
+        /// formation never produces a false clear-LOS result.
         /// </summary>
         private IEnumerable<Vec3> SampleFormationPositions(Formation formation)
         {
             Vec2 avg2D = formation.GetAveragePositionOfUnits(false, false);
-            Vec3 avg = avg2D.ToVec3();
-            if (avg != Vec3.Zero)
-                yield return avg;
 
             Agent median = formation.GetMedianAgent(false, false, avg2D);
             if (median != null)
@@ -122,22 +121,27 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
             if (forward.LengthSquared < 0.0001f)
                 yield break;
 
-            forward = forward.Normalized();
-            Vec2 right = forward.RightVec().Normalized();
-            float w = MathF.Max(formation.Width * 0.5f, 1f);
-            float d = MathF.Max(formation.Depth * 0.5f, 1f);
-            Vec3 anchor = avg != Vec3.Zero ? avg : current;
-            if (anchor == Vec3.Zero)
+            Vec2 anchor = avg2D != Vec2.Zero ? avg2D : formation.CurrentPosition;
+            if (anchor == Vec2.Zero)
                 yield break;
 
-            yield return anchor + right.ToVec3() * w;
-            yield return anchor - right.ToVec3() * w;
-            yield return anchor + forward.ToVec3() * d;
-            yield return anchor - forward.ToVec3() * d;
-            yield return anchor + right.ToVec3() * w + forward.ToVec3() * d;
-            yield return anchor + right.ToVec3() * w - forward.ToVec3() * d;
-            yield return anchor - right.ToVec3() * w + forward.ToVec3() * d;
-            yield return anchor - right.ToVec3() * w - forward.ToVec3() * d;
+            forward = forward.Normalized();
+            Vec2 right = forward.RightVec().Normalized();
+            float w = MathF.Max(formation.Width * 0.4f, 1f);
+            float d = MathF.Max(formation.Depth * 0.4f, 1f);
+
+            Agent a;
+            a = formation.GetMedianAgent(false, false, anchor + right * w);
+            if (a != null) yield return a.Position;
+
+            a = formation.GetMedianAgent(false, false, anchor - right * w);
+            if (a != null) yield return a.Position;
+
+            a = formation.GetMedianAgent(false, false, anchor + forward * d);
+            if (a != null) yield return a.Position;
+
+            a = formation.GetMedianAgent(false, false, anchor - forward * d);
+            if (a != null) yield return a.Position;
         }
 
         private Target ScoreFormation(Formation formation)

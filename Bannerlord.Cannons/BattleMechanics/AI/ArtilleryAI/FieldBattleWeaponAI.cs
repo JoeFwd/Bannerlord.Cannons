@@ -1,6 +1,7 @@
 using Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions;
 using Bannerlord.Cannons.BattleMechanics.Artillery;
 using TaleWorlds.Core;
+using TaleWorlds.Engine;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 
@@ -15,14 +16,16 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
         private const float FindTargetInterval = 0.5f;
 
         private readonly BaseFieldSiegeWeapon _weapon;
-        private readonly ITargetSelector _targetSelector;
+        private readonly ITargetSelector _siegeWeaponSelector;
+        private readonly ITargetSelector _formationSelector;
         private Target _target;
         private Timer _findTargetTimer;
 
         public FieldBattleWeaponAI(BaseFieldSiegeWeapon weapon) : base(weapon)
         {
             _weapon = weapon;
-            _targetSelector = new FormationTargetSelector(weapon);
+            _siegeWeaponSelector = new SiegeWeaponTargetSelector(weapon);
+            _formationSelector = new FormationTargetSelector(weapon);
             _findTargetTimer = new Timer(Mission.Current.CurrentTime, FindTargetInterval);
         }
 
@@ -69,7 +72,7 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
         {
             _weapon.ClearTarget();
             if (_findTargetTimer.Check(Mission.Current.CurrentTime))
-                _target = _targetSelector.FindBestTarget();
+                _target = _siegeWeaponSelector.FindBestTarget() ?? _formationSelector.FindBestTarget();
         }
 
         /// <summary>
@@ -79,6 +82,17 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
         /// </summary>
         private void UpdateLeadPosition(Target target)
         {
+            if (target.WeaponEntity != null)
+            {
+                // Siege weapon target: refresh to current centre position each tick.
+                // No lead calculation — rams and towers move too slowly to matter.
+                GameEntity entity = target.WeaponEntity.GetTargetEntity();
+                target.SelectedWorldPosition = entity != null
+                    ? (entity.GlobalBoxMax + entity.GlobalBoxMin) * 0.5f
+                    : Vec3.Zero;
+                return;
+            }
+
             if (target.Formation == null)
             {
                 target.SelectedWorldPosition = Vec3.Zero;
