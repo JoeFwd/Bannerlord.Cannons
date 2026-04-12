@@ -12,14 +12,18 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
 {
     public class FieldBattleWeaponAI : UsableMachineAIBase
     {
+        private const float FindTargetInterval = 0.5f;
+
         private readonly BaseFieldSiegeWeapon _fieldSiegeWeapon;
         private Target _target;
-        private List<Axis> targetDecisionFunctions;
+        private List<Axis> _targetDecisionFunctions;
+        private Timer _findTargetTimer;
 
         public FieldBattleWeaponAI(BaseFieldSiegeWeapon usableMachine) : base(usableMachine)
         {
             _fieldSiegeWeapon = usableMachine;
-            targetDecisionFunctions = CreateTargetingFunctions();
+            _targetDecisionFunctions = CreateTargetingFunctions();
+            _findTargetTimer = new Timer(Mission.Current.CurrentTime, FindTargetInterval);
         }
 
         protected override void OnTick(Agent agentToCompareTo, Formation formationToCompareTo, Team potentialUsersTeam, float dt)
@@ -32,20 +36,18 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
                     if (_target != null)
                     {
                         if (_fieldSiegeWeapon.Target != _target)
-                        {
                             _fieldSiegeWeapon.SetTarget(_target);
-                        }
 
                         if (_fieldSiegeWeapon.Target != null && _fieldSiegeWeapon.PilotAgent.Formation.FiringOrder.OrderType != OrderType.HoldFire)
                         {
                             var position = GetAdjustedTargetPosition(_fieldSiegeWeapon.Target);
-                            if (position != Vec3.Zero && _fieldSiegeWeapon.AimAtThreat(_fieldSiegeWeapon.Target) && _fieldSiegeWeapon.IsTargetInRange(position) && _fieldSiegeWeapon.IsSafeToFire())
+                            bool safeToFire = _fieldSiegeWeapon.IsSafeToFire();
+                            if (position != Vec3.Zero && _fieldSiegeWeapon.AimAtThreat(_fieldSiegeWeapon.Target) && _fieldSiegeWeapon.IsTargetInRange(position) && safeToFire)
                             {
                                 _fieldSiegeWeapon.AiRequestsShoot();
                                 _target = null;
                             }
-
-                            if (!_fieldSiegeWeapon.IsSafeToFire())
+                            else if (!safeToFire)
                             {
                                 _target = null;
                             }
@@ -54,7 +56,8 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
                     else
                     {
                         _fieldSiegeWeapon.ClearTarget();
-                        _target = FindNewTarget();
+                        if (_findTargetTimer.Check(Mission.Current.CurrentTime))
+                            _target = FindNewTarget();
                     }
                 }
             }
@@ -64,12 +67,14 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
         {
             if (target?.Formation == null) return Vec3.Zero;
 
-            var targetAgent = target.SelectedWorldPosition == Vec3.Zero ? CommonAIFunctions.CommonAIFunctions.GetRandomAgent(target.Formation) : target.Agent;
+            var targetAgent = target.SelectedWorldPosition == Vec3.Zero
+                ? CommonAIFunctions.CommonAIFunctions.GetRandomAgent(target.Formation)
+                : target.Agent;
 
             if (targetAgent == null) return Vec3.Zero;
             target.Agent = targetAgent;
 
-            Vec3 velocity = target.Formation.QuerySystem.CurrentVelocity.ToVec3();
+            Vec3 velocity = target.GetVelocity();
             float time = _fieldSiegeWeapon.GetEstimatedCurrentFlightTime();
 
             target.SelectedWorldPosition = target.Position + velocity * time;
@@ -78,36 +83,24 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
 
         private Target FindNewTarget()
         {
-            var findNewTarget = GetAllThreats()
-                .FindAll(target => target.Formation == null || target.Formation.GetCountOfUnitsWithCondition(x => x.IsActive()) > 0)
-                .ToList();
-            return findNewTarget.Count > 0 ? TaleWorlds.Core.Extensions.MaxBy(findNewTarget, target => target.UtilityValue) : null;
+            var candidates = GetAllThreats()
+                .FindAll(target => target.Formation == null || target.Formation.GetCountOfUnitsWithCondition(x => x.IsActive()) > 0);
+            return candidates.Count > 0 ? TaleWorlds.Core.Extensions.MaxBy(candidates, target => target.UtilityValue) : null;
         }
 
         private List<Target> GetAllThreats()
         {
             List<Target> list = new List<Target>();
-            /*
-            this._potentialTargetUsableMachines.RemoveAll((ITargetable ptum) => ptum is UsableMachine && ((ptum as UsableMachine).IsDestroyed || (ptum as UsableMachine).GameEntity == null));
-            list.AddRange(from um in this._potentialTargetUsableMachines
-                          select new Threat
-                          {
-                              WeaponEntity = um,
-                              ThreatValue = this.Weapon.ProcessTargetValue(um.GetTargetValue(this.WeaponPositions), um.GetTargetFlags())
-                          });
-            */
             foreach (Formation formation in GetUnemployedEnemyFormations())
             {
                 Vec3 candidatePosition = GetCandidateTargetPosition(formation);
-                if (candidatePosition == Vec3.Zero || !_fieldSiegeWeapon.IsTargetWithinDirectionRestriction(candidatePosition))
+                if (candidatePosition == Vec3.Zero)
                     continue;
 
                 Target targetFormation = GetTargetValueOfFormation(formation);
                 targetFormation.SelectedWorldPosition = candidatePosition;
                 if (targetFormation.UtilityValue != -1f && _fieldSiegeWeapon.IsTargetInRange(candidatePosition))
-                {
                     list.Add(targetFormation);
-                }
             }
 
             return list;
@@ -118,30 +111,24 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
             if (formation == null)
                 return Vec3.Zero;
 
-            Vec3 velocity = formation.QuerySystem.CurrentVelocity.ToVec3();
-            float time = _fieldSiegeWeapon.Target == null
-                ? 0f
-                : _fieldSiegeWeapon.GetEstimatedCurrentFlightTime();
-
             Vec3 bestPosition = Vec3.Zero;
             float bestHorizontalAngle = float.MaxValue;
 
             foreach (Vec3 sample in GetFormationTargetSamples(formation))
             {
-                Vec3 candidate = sample + velocity * time;
-                if (candidate == Vec3.Zero || !_fieldSiegeWeapon.IsTargetInRange(candidate))
+                if (sample == Vec3.Zero || !_fieldSiegeWeapon.IsTargetInRange(sample))
                     continue;
 
-                if (!_fieldSiegeWeapon.TryGetAbsoluteHorizontalAngleToTarget(candidate, out float absoluteLocalTargetDirection))
+                if (!_fieldSiegeWeapon.TryGetAbsoluteHorizontalAngleToTarget(sample, out float absoluteLocalTargetDirection))
                     continue;
 
-                if (!_fieldSiegeWeapon.IsTargetWithinDirectionRestriction(candidate))
+                if (!_fieldSiegeWeapon.IsTargetWithinDirectionRestriction(sample))
                     continue;
 
                 if (absoluteLocalTargetDirection < bestHorizontalAngle)
                 {
                     bestHorizontalAngle = absoluteLocalTargetDirection;
-                    bestPosition = candidate;
+                    bestPosition = sample;
                 }
             }
 
@@ -150,11 +137,12 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
 
         private IEnumerable<Vec3> GetFormationTargetSamples(Formation formation)
         {
-            Vec3 averagePosition = formation.GetAveragePositionOfUnits(false, false).ToVec3();
+            Vec2 averagePosition2D = formation.GetAveragePositionOfUnits(false, false);
+            Vec3 averagePosition = averagePosition2D.ToVec3();
             if (averagePosition != Vec3.Zero)
                 yield return averagePosition;
 
-            Agent medianAgent = formation.GetMedianAgent(false, false, formation.GetAveragePositionOfUnits(false, false));
+            Agent medianAgent = formation.GetMedianAgent(false, false, averagePosition2D);
             if (medianAgent != null)
                 yield return medianAgent.Position;
 
@@ -169,10 +157,8 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
             forward = forward.Normalized();
             Vec2 right = forward.RightVec().Normalized();
 
-            float halfWidth = formation.Width * 0.5f;
-            float halfDepth = formation.Depth * 0.5f;
-            float widthStep = MathF.Max(halfWidth, 1f);
-            float depthStep = MathF.Max(halfDepth, 1f);
+            float widthStep = MathF.Max(formation.Width * 0.5f, 1f);
+            float depthStep = MathF.Max(formation.Depth * 0.5f, 1f);
             Vec3 anchor = averagePosition != Vec3.Zero ? averagePosition : currentPosition;
             if (anchor == Vec3.Zero)
                 yield break;
@@ -190,7 +176,7 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
         private Target GetTargetValueOfFormation(Formation formation)
         {
             var target = new Target {Formation = formation};
-            target.UtilityValue = targetDecisionFunctions.GeometricMean(target);
+            target.UtilityValue = _targetDecisionFunctions.GeometricMean(target);
             return target;
         }
 
@@ -204,12 +190,12 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
 
         private List<Axis> CreateTargetingFunctions()
         {
-            var targetingFunctions = new List<Axis>();
-            targetingFunctions.Add(new Axis(0, 300, x => 0.7f - 3 * (float) Math.Pow(x - 0.3f, 3) + (float) Math.Pow(x, 2), CommonAIDecisionFunctions.DistanceToTarget(() => _fieldSiegeWeapon.GameEntity.GlobalPosition))); // 0.7 - 3(x-0.3)^3 + x^2
-            // targetingFunctions.Add(new Axis(0, CommonAIDecisionFunctions.CalculateEnemyTotalPower(_fieldSiegeWeapon.Team), x => x, CommonAIDecisionFunctions.FormationPower()));
-            targetingFunctions.Add(new Axis(0, 70, x => x, CommonAIDecisionFunctions.UnitCount()));
-            targetingFunctions.Add(new Axis(0, 10, x => x, CommonAIDecisionFunctions.TargetDistanceToHostiles()));
-            return targetingFunctions;
+            return new List<Axis>
+            {
+                new Axis(0, 300, x => 0.7f - 3 * (float) Math.Pow(x - 0.3f, 3) + (float) Math.Pow(x, 2), CommonAIDecisionFunctions.DistanceToTarget(() => _fieldSiegeWeapon.GameEntity.GlobalPosition)),
+                new Axis(0, 70, x => x, CommonAIDecisionFunctions.UnitCount()),
+                new Axis(0, 10, x => x, CommonAIDecisionFunctions.TargetDistanceToHostiles()),
+            };
         }
     }
 }
