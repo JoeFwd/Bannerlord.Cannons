@@ -106,44 +106,40 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions
         }
 
         /// <summary>
-        /// Returns the unit density of the formation (units per square metre of formation area).
-        /// A tightly-packed blob maximises cannonball casualties, so higher density → higher score.
-        /// Range is 0–1.5 u/m²; anything denser is treated as maximum.
+        /// Estimates how many units a cannonball would hit given the formation's size,
+        /// unit count, and the angle of the shot relative to the formation's facing.
+        /// <para>
+        /// Formula: N × (|cos α| / W + |sin α| / D) where α is the angle between the
+        /// shot direction and the formation's forward axis. This naturally rewards both
+        /// dense formations and shots that travel along the formation's longest dimension
+        /// (enfilading fire), without needing two separate axes.
+        /// </para>
+        /// Practical range 0–20; axis is clamped at 20.
         /// </summary>
-        public static Func<Target, float> FormationDensity()
+        public static Func<Target, float> ExpectedCasualties(Func<Vec3> weaponPosition)
         {
             return target =>
             {
                 if (target.Formation == null) return 0f;
-                float area = Math.Max(target.Formation.Width * target.Formation.Depth, 1f);
-                return target.Formation.CountOfUnits / area;
-            };
-        }
 
-        /// <summary>
-        /// Returns how well the cannon-to-formation direction aligns with the formation's
-        /// depth axis (forward/backward). 1.0 = enfilading fire (cannonball travels through
-        /// every rank); 0.0 = shooting across the width (hits only one rank).
-        /// Range 0–1, so the axis can be used directly with a linear curve.
-        /// </summary>
-        public static Func<Target, float> EnfiladeAlignment(Func<Vec3> weaponPosition)
-        {
-            return target =>
-            {
-                if (target.Formation == null) return 0f;
+                float n = target.Formation.CountOfUnits;
+                float w = Math.Max(target.Formation.Width, 1f);
+                float d = Math.Max(target.Formation.Depth, 1f);
 
                 Vec2 forward = target.Formation.QuerySystem.EstimatedDirection;
-                if (forward.LengthSquared < 0.0001f) return 0f;
-                forward = forward.Normalized();
-
                 Vec2 formationCenter = target.Formation.GetAveragePositionOfUnits(false, false);
                 Vec2 toFormation = formationCenter - weaponPosition().AsVec2;
-                if (toFormation.LengthSquared < 0.0001f) return 0f;
+
+                if (forward.LengthSquared < 0.0001f || toFormation.LengthSquared < 0.0001f)
+                    return n / (w * d); // no direction info, fall back to plain density
+
+                forward     = forward.Normalized();
                 toFormation = toFormation.Normalized();
 
-                // |cos θ| between shot direction and formation forward
-                float dot = toFormation.x * forward.x + toFormation.y * forward.y;
-                return Math.Abs(dot);
+                float cosA = Math.Abs(toFormation.x * forward.x + toFormation.y * forward.y);
+                float sinA = (float)Math.Sqrt(Math.Max(0f, 1f - cosA * cosA));
+
+                return n * (cosA / w + sinA / d);
             };
         }
     }

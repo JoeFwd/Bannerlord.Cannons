@@ -34,8 +34,7 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
                     CommonAIDecisionFunctions.DistanceToTarget(() => _weapon.GameEntity.GlobalPosition)),
                 new Axis(0, 70, x => x, CommonAIDecisionFunctions.UnitCount()),
                 new Axis(0, 10, x => x, CommonAIDecisionFunctions.TargetDistanceToHostiles()),
-                new Axis(0f, 1.5f, x => x, CommonAIDecisionFunctions.FormationDensity()),
-                new Axis(0f, 1f,   x => x, CommonAIDecisionFunctions.EnfiladeAlignment(() => _weapon.GameEntity.GlobalPosition)),
+                new Axis(0f, 20f, x => x, CommonAIDecisionFunctions.ExpectedCasualties(() => _weapon.GameEntity.GlobalPosition)),
             };
         }
 
@@ -69,80 +68,22 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
         }
 
         /// <summary>
-        /// Samples positions across the formation and returns the one closest to the
-        /// weapon's current aim direction that is in range, within the direction
-        /// restriction, and has clear line of sight (no non-destructible cover).
-        /// Returns Vec3.Zero if no such position exists.
+        /// Returns the formation's centre position (median agent) if it is in range,
+        /// within the direction restriction, and has clear line of sight.
+        /// Returns Vec3.Zero if the centre fails any check.
         /// </summary>
         private Vec3 FindBestShootablePosition(Formation formation)
         {
-            Vec3 best = Vec3.Zero;
-            float bestAngle = float.MaxValue;
-
-            foreach (Vec3 sample in SampleFormationPositions(formation))
-            {
-                if (sample == Vec3.Zero || !_weapon.IsTargetInRange(sample))
-                    continue;
-                if (!_weapon.TryGetAbsoluteHorizontalAngleToTarget(sample, out float angle))
-                    continue;
-                if (!_weapon.IsTargetWithinDirectionRestriction(sample))
-                    continue;
-                if (!_weapon.HasLineOfSightToTarget(sample))
-                    continue;
-
-                if (angle < bestAngle)
-                {
-                    bestAngle = angle;
-                    best = sample;
-                }
-            }
-
-            return best;
-        }
-
-        /// <summary>
-        /// Yields a set of representative positions across the formation: centre,
-        /// median agent, current position, and agents sampled near each flank/edge.
-        /// All positions correspond to actual agents so phantom geometry outside the
-        /// formation never produces a false clear-LOS result.
-        /// </summary>
-        private IEnumerable<Vec3> SampleFormationPositions(Formation formation)
-        {
             Vec2 avg2D = formation.GetAveragePositionOfUnits(false, false);
+            Agent center = formation.GetMedianAgent(false, false, avg2D);
+            if (center == null) return Vec3.Zero;
 
-            Agent median = formation.GetMedianAgent(false, false, avg2D);
-            if (median != null)
-                yield return median.Position;
+            Vec3 position = center.Position;
+            if (!_weapon.IsTargetInRange(position)) return Vec3.Zero;
+            if (!_weapon.IsTargetWithinDirectionRestriction(position)) return Vec3.Zero;
+            if (!_weapon.HasLineOfSightToTarget(position)) return Vec3.Zero;
 
-            Vec3 current = formation.CurrentPosition.ToVec3();
-            if (current != Vec3.Zero)
-                yield return current;
-
-            Vec2 forward = formation.QuerySystem.EstimatedDirection;
-            if (forward.LengthSquared < 0.0001f)
-                yield break;
-
-            Vec2 anchor = avg2D != Vec2.Zero ? avg2D : formation.CurrentPosition;
-            if (anchor == Vec2.Zero)
-                yield break;
-
-            forward = forward.Normalized();
-            Vec2 right = forward.RightVec().Normalized();
-            float w = MathF.Max(formation.Width * 0.4f, 1f);
-            float d = MathF.Max(formation.Depth * 0.4f, 1f);
-
-            Agent a;
-            a = formation.GetMedianAgent(false, false, anchor + right * w);
-            if (a != null) yield return a.Position;
-
-            a = formation.GetMedianAgent(false, false, anchor - right * w);
-            if (a != null) yield return a.Position;
-
-            a = formation.GetMedianAgent(false, false, anchor + forward * d);
-            if (a != null) yield return a.Position;
-
-            a = formation.GetMedianAgent(false, false, anchor - forward * d);
-            if (a != null) yield return a.Position;
+            return position;
         }
 
         private Target ScoreFormation(Formation formation)
