@@ -119,6 +119,33 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions
                 return target.Formation.CountOfUnits / area;
             };
         }
+
+        /// <summary>
+        /// Returns how well the cannon-to-formation direction aligns with the formation's
+        /// depth axis (forward/backward). 1.0 = enfilading fire (cannonball travels through
+        /// every rank); 0.0 = shooting across the width (hits only one rank).
+        /// Range 0–1, so the axis can be used directly with a linear curve.
+        /// </summary>
+        public static Func<Target, float> EnfiladeAlignment(Func<Vec3> weaponPosition)
+        {
+            return target =>
+            {
+                if (target.Formation == null) return 0f;
+
+                Vec2 forward = target.Formation.QuerySystem.EstimatedDirection;
+                if (forward.LengthSquared < 0.0001f) return 0f;
+                forward = forward.Normalized();
+
+                Vec2 formationCenter = target.Formation.GetAveragePositionOfUnits(false, false);
+                Vec2 toFormation = formationCenter - weaponPosition().AsVec2;
+                if (toFormation.LengthSquared < 0.0001f) return 0f;
+                toFormation = toFormation.Normalized();
+
+                // |cos θ| between shot direction and formation forward
+                float dot = toFormation.x * forward.x + toFormation.y * forward.y;
+                return Math.Abs(dot);
+            };
+        }
     }
 
     public static class CommonAIStateFunctions

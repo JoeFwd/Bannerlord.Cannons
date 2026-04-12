@@ -35,6 +35,7 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
                 new Axis(0, 70, x => x, CommonAIDecisionFunctions.UnitCount()),
                 new Axis(0, 10, x => x, CommonAIDecisionFunctions.TargetDistanceToHostiles()),
                 new Axis(0f, 1.5f, x => x, CommonAIDecisionFunctions.FormationDensity()),
+                new Axis(0f, 1f,   x => x, CommonAIDecisionFunctions.EnfiladeAlignment(() => _weapon.GameEntity.GlobalPosition)),
             };
         }
 
