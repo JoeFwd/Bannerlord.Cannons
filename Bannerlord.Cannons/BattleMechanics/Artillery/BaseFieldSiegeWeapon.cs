@@ -129,7 +129,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
                     out collisionDistance,
                     out hitEntity,
                     0.1f,
-                    BodyFlags.CommonCollisionExcludeFlags);
+                    BodyFlags.CommonCollisionExcludeFlagsForMissile);
             }
 
             // No hit, or hit is within 2 m of the target (terrain at target's feet, etc.)
