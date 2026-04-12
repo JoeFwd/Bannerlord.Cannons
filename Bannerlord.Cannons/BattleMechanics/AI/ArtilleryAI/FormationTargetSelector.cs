@@ -18,6 +18,14 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
     /// </summary>
     public class FormationTargetSelector : ITargetSelector
     {
+        // Formation targets are capped below 1.0 so that siege weapons / rams (future
+        // targeting tier) can always outscore any formation.
+        private const float FormationUtilityCap = 0.85f;
+
+        // Formations with no clear line of sight are still candidates (cannon may have
+        // no better option) but receive a heavy penalty to make them lowest priority.
+        private const float CoveredFormationPenalty = 0.1f;
+
         private readonly BaseFieldSiegeWeapon _weapon;
         private readonly List<Axis> _axes;
 
@@ -30,13 +38,13 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
                     CommonAIDecisionFunctions.DistanceToTarget(() => _weapon.GameEntity.GlobalPosition)),
                 new Axis(0, 70, x => x, CommonAIDecisionFunctions.UnitCount()),
                 new Axis(0, 10, x => x, CommonAIDecisionFunctions.TargetDistanceToHostiles()),
+                new Axis(0f, 1.5f, x => x, CommonAIDecisionFunctions.FormationDensity()),
             };
         }
 
         public Target FindBestTarget()
         {
-            var candidates = BuildCandidates()
-                .FindAll(t => t.Formation == null || t.Formation.GetCountOfUnitsWithCondition(a => a.IsActive()) > 0);
+            var candidates = BuildCandidates();
             return candidates.Count > 0 ? TaleWorlds.Core.Extensions.MaxBy(candidates, t => t.UtilityValue) : null;
         }
 
@@ -45,24 +53,52 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
             var list = new List<Target>();
             foreach (Formation formation in GetEnemyFormations())
             {
-                Vec3 position = FindBestShootablePosition(formation);
+                if (formation.GetCountOfUnitsWithCondition(a => a.IsActive()) == 0)
+                    continue;
+
+                Vec3 position = FindBestShootablePosition(formation, out bool hasClearLos);
                 if (position == Vec3.Zero)
                     continue;
 
                 Target target = ScoreFormation(formation);
                 target.SelectedWorldPosition = position;
-                if (target.UtilityValue != -1f && _weapon.IsTargetInRange(position))
-                    list.Add(target);
+                if (target.UtilityValue == -1f || !_weapon.IsTargetInRange(position))
+                    continue;
+
+                if (!hasClearLos)
+                    target.UtilityValue *= CoveredFormationPenalty;
+                target.UtilityValue = Math.Min(target.UtilityValue, FormationUtilityCap);
+                list.Add(target);
             }
             return list;
         }
 
         /// <summary>
-        /// Samples positions across the formation and returns the one closest to the
-        /// weapon's current aim direction that is both in range and within the direction
-        /// restriction. Returns Vec3.Zero if no shootable position exists.
+        /// Returns the best aim position for this formation. First looks for a position
+        /// with clear line of sight (preferred); if none exists, falls back to the best
+        /// in-arc covered position. <paramref name="hasClearLos"/> tells the caller
+        /// whether the returned position has unobstructed line of sight.
         /// </summary>
-        private Vec3 FindBestShootablePosition(Formation formation)
+        private Vec3 FindBestShootablePosition(Formation formation, out bool hasClearLos)
+        {
+            Vec3 result = FindBestAngledPosition(formation, requireLos: true);
+            if (result != Vec3.Zero)
+            {
+                hasClearLos = true;
+                return result;
+            }
+
+            hasClearLos = false;
+            return FindBestAngledPosition(formation, requireLos: false);
+        }
+
+        /// <summary>
+        /// Samples positions across the formation and returns the one closest to the
+        /// weapon's current aim direction that is in range and within the direction
+        /// restriction. When <paramref name="requireLos"/> is true, positions blocked
+        /// by non-destructible cover are also excluded.
+        /// </summary>
+        private Vec3 FindBestAngledPosition(Formation formation, bool requireLos)
         {
             Vec3 best = Vec3.Zero;
             float bestAngle = float.MaxValue;
@@ -75,7 +111,7 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
                     continue;
                 if (!_weapon.IsTargetWithinDirectionRestriction(sample))
                     continue;
-                if (!_weapon.HasLineOfSightToTarget(sample))
+                if (requireLos && !_weapon.HasLineOfSightToTarget(sample))
                     continue;
 
                 if (angle < bestAngle)

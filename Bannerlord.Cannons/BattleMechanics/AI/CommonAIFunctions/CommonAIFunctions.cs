@@ -104,6 +104,21 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions
         {
             return target => target.Formation?.CountOfUnits ?? 1;
         }
+
+        /// <summary>
+        /// Returns the unit density of the formation (units per square metre of formation area).
+        /// A tightly-packed blob maximises cannonball casualties, so higher density → higher score.
+        /// Range is 0–1.5 u/m²; anything denser is treated as maximum.
+        /// </summary>
+        public static Func<Target, float> FormationDensity()
+        {
+            return target =>
+            {
+                if (target.Formation == null) return 0f;
+                float area = Math.Max(target.Formation.Width * target.Formation.Depth, 1f);
+                return target.Formation.CountOfUnits / area;
+            };
+        }
     }
 
     public static class CommonAIStateFunctions
