@@ -75,6 +75,8 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
                     continue;
                 if (!_weapon.IsTargetWithinDirectionRestriction(sample))
                     continue;
+                if (!_weapon.HasLineOfSightToTarget(sample))
+                    continue;
 
                 if (angle < bestAngle)
                 {

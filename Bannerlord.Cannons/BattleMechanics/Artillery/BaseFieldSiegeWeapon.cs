@@ -105,6 +105,41 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             _ammoPointController.ForceAmmoPointUsage(State, LoadAmmoStandingPoint, AmmoPickUpStandingPoints);
         }
 
+        /// <summary>
+        /// Returns true when the straight-line path from the muzzle to <paramref name="targetPos"/>
+        /// (sampled at ~chest height) is unobstructed, or is only blocked by a destructible entity
+        /// (e.g. a wall that can be knocked down). Non-destructible terrain and static entities
+        /// cause the method to return false so the AI skips targets sheltered behind solid cover.
+        /// </summary>
+        public bool HasLineOfSightToTarget(Vec3 targetPos)
+        {
+            Vec3 muzzlePos = MissleStartingPositionForSimulation;
+            Vec3 aimPoint = targetPos + new Vec3(0f, 0f, 1f); // approximate chest height
+            float targetDistance = (aimPoint - muzzlePos).Length;
+            if (targetDistance < 0.001f)
+                return true;
+
+            float collisionDistance;
+            GameEntity hitEntity;
+            using (new TWSharedMutexReadLock(Scene.PhysicsAndRayCastLock))
+            {
+                Scene.RayCastForClosestEntityOrTerrainMT(
+                    muzzlePos,
+                    aimPoint,
+                    out collisionDistance,
+                    out hitEntity,
+                    0.1f,
+                    BodyFlags.CommonCollisionExcludeFlags);
+            }
+
+            // No hit, or hit is within 2 m of the target (terrain at target's feet, etc.)
+            if (float.IsNaN(collisionDistance) || collisionDistance >= targetDistance - 2f)
+                return true;
+
+            // An obstacle was hit — allow only if it can be destroyed
+            return hitEntity != null && hitEntity.HasScriptOfType<DestructableComponent>();
+        }
+
         public Vec3 GetBallisticErrorAppliedDirection(float ballisticErrorAmount)
         {
             EnsureComponentsInitialised();
