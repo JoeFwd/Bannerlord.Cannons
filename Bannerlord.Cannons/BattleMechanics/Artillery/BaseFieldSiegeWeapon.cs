@@ -207,16 +207,6 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             return IsAngleWithinRestrictions(localTargetDirection, localTargetAngle);
         }
 
-        public bool TryGetAbsoluteHorizontalAngleToTarget(Vec3 target, out float absoluteLocalTargetDirection)
-        {
-            absoluteLocalTargetDirection = MathF.PI;
-            if (!TryCalculateLocalDirectionAndLocalAngleToShootTargetUsingAimFrame(target, out float localTargetDirection, out _))
-                return false;
-
-            absoluteLocalTargetDirection = MathF.Abs(localTargetDirection);
-            return true;
-        }
-
         private bool TryCalculateLocalDirectionAndLocalAngleToShootTargetUsingAimFrame(
             Vec3 target,
             out float localTargetDirection,
