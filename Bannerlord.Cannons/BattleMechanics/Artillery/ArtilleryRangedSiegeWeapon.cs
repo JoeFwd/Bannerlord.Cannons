@@ -94,12 +94,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
 
         protected virtual ITargetingPolicy CreateTargetingPolicy() => new TargetingPolicy();
 
-        public override UsableMachineAIBase CreateAIBehaviorObject()
-        {
-            if (Mission.Current?.IsSiegeBattle ?? false)
-                return new FieldSiegeWeaponAI(this);
-            return new FieldBattleWeaponAI(this);
-        }
+        public override UsableMachineAIBase CreateAIBehaviorObject() => Mission.Current.IsSiegeBattle && Side.Equals(BattleSideEnum.Attacker) ? new FieldSiegeWeaponAI(this) : new FieldBattleWeaponAI(this);
 
         // --- Init ---
 
