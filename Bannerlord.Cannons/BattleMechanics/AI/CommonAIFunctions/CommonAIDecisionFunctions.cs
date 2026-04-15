@@ -112,7 +112,7 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions
 
         /// <summary>Returns the number of units currently in the target formation.</summary>
         public static Func<Target, float> UnitCount()
-            => target => target.Formation?.CountOfUnits ?? 1;
+            => target => target.Formation?.CountOfUnits ?? 0;
 
         /// <summary>
         /// Estimates how many units a cannonball would hit given the formation's size
@@ -135,19 +135,39 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions
                 float w = Math.Max(target.Formation.Width, 1f);
                 float d = Math.Max(target.Formation.Depth, 1f);
 
-                Vec2 forward        = target.Formation.QuerySystem.EstimatedDirection;
+                Vec2 forward         = target.Formation.QuerySystem.EstimatedDirection;
                 Vec2 formationCenter = target.Formation.GetAveragePositionOfUnits(false, false);
-                Vec2 toFormation    = formationCenter - weaponPositionProvider.Invoke().AsVec2;
+                Vec2 toFormation     = formationCenter - weaponPositionProvider.Invoke().AsVec2;
 
-                if (forward.LengthSquared < 0.0001f || toFormation.LengthSquared < 0.0001f)
+                float cosAlpha = ComputeCosAlpha(forward, toFormation);
+                if (cosAlpha < 0f)
                     return n / (w * d); // no direction info — fall back to plain density
 
-                forward     = forward.Normalized();
-                toFormation = toFormation.Normalized();
-
-                float cosAlpha = Math.Abs(toFormation.x * forward.x + toFormation.y * forward.y);
                 return ScoringFormulas.EnfiladeScore(n, w, d, cosAlpha);
             };
+        }
+
+        /// <summary>
+        /// Computes the absolute cosine of the angle between the shot direction and
+        /// the formation's forward axis. Used to determine enfilade effectiveness.
+        ///
+        /// Returns a negative sentinel (-1) when either vector is degenerate (near-zero
+        /// length), signalling the caller to use a direction-independent fallback.
+        /// </summary>
+        /// <param name="forward">Formation's estimated facing direction (world-space 2D).</param>
+        /// <param name="toFormation">Vector from the cannon to the formation centre (world-space 2D).</param>
+        public static float ComputeCosAlpha(Vec2 forward, Vec2 toFormation)
+        {
+            // A near-zero vector has no meaningful direction; skip enfilade math.
+            if (forward.LengthSquared < 0.0001f || toFormation.LengthSquared < 0.0001f)
+                return -1f;
+
+            forward     = forward.Normalized();
+            toFormation = toFormation.Normalized();
+
+            // |cos α| = |dot(forward, toFormation)| — how aligned the shot is with the
+            // formation's depth axis. 1 = firing straight into the depth, 0 = broadside.
+            return Math.Abs(toFormation.x * forward.x + toFormation.y * forward.y);
         }
     }
 }

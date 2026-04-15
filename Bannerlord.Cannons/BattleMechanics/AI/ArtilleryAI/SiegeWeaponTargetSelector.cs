@@ -15,18 +15,17 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
     /// ballista, mangonel, trebuchet, etc.) as a cannon target.
     ///
     /// Siege weapons are always preferred over infantry formations: the utility score
-    /// returned here is in [0.9, 1.0], which is guaranteed to exceed the formation
-    /// selector's cap of 0.85 (<see cref="FormationTargetSelector"/>).
+    /// returned here is in [<see cref="ArtilleryAIConstants.SiegeWeaponScoreFloor"/>, 1.0],
+    /// which is guaranteed to exceed the formation selector's cap of
+    /// <see cref="ArtilleryAIConstants.FormationUtilityCap"/> (<see cref="FormationTargetSelector"/>).
     ///
     /// Within the siege weapon tier, closer targets score higher (up to 10% bonus),
     /// but any shootable siege weapon beats any formation regardless of distance.
     /// </summary>
     public class SiegeWeaponTargetSelector : ITargetSelector
     {
-        // Score range for siege weapon targets. The minimum (0.9) must exceed the
-        // formation utility cap (0.85) so siege weapons always win the priority race.
-        private const float MaxScoringRangeMetres = 300f; // flat penalty beyond this distance
-        private const float MaxDistancePenalty    = 0.1f; // score floor = 1.0 - 0.1 = 0.9
+        // score floor = 1.0 - MaxDistancePenalty = SiegeWeaponScoreFloor (0.9)
+        private const float MaxDistancePenalty = 0.1f;
 
         private readonly BaseFieldSiegeWeapon _weapon;
 
@@ -56,7 +55,7 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
                 if (!_weapon.HasLineOfSightToTarget(position))            continue;
 
                 float distance = _weapon.GameEntity.GlobalPosition.Distance(position);
-                float score    = ScoringFormulas.SiegeWeaponDistanceScore(distance, MaxScoringRangeMetres);
+                float score    = ScoringFormulas.SiegeWeaponDistanceScore(distance, ArtilleryAIConstants.MaxTargetRangeMetres);
 
                 if (score > bestScore)
                 {

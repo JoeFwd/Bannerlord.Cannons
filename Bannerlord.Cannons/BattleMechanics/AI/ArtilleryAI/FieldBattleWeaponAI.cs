@@ -80,18 +80,32 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
             UpdateLeadPosition(_weapon.Target);
             Vec3 aimPoint = _weapon.Target.SelectedWorldPosition;
 
-            bool safeToFire = _weapon.IsSafeToFire();
-            if (aimPoint != Vec3.Zero && _weapon.AimAtThreat(_weapon.Target) && _weapon.IsTargetInRange(aimPoint) && safeToFire)
+            if (!_weapon.IsSafeToFire())
+            {
+                // Friendly in the way — abandon target rather than waiting indefinitely.
+                _target = null;
+                return;
+            }
+
+            if (ReadyToFire(aimPoint))
             {
                 _weapon.AiRequestsShoot();
                 _target = null; // consumed — next tick will search for a new target
             }
-            else if (!safeToFire)
-            {
-                // Don't wait: a friendly is in the way. Clear and re-select next interval.
-                _target = null;
-            }
         }
+
+        /// <summary>
+        /// Returns <c>true</c> when the weapon is aimed and ready to fire at
+        /// <paramref name="aimPoint"/>: the aim point is valid, the weapon has rotated
+        /// to face the target, and the target is within range.
+        ///
+        /// Note: calling <see cref="BaseFieldSiegeWeapon.AimAtThreat"/> also updates
+        /// the weapon's rotation as a side effect.
+        /// </summary>
+        private bool ReadyToFire(Vec3 aimPoint)
+            => aimPoint != Vec3.Zero
+               && _weapon.AimAtThreat(_weapon.Target)
+               && _weapon.IsTargetInRange(aimPoint);
 
         /// <summary>
         /// Called each tick while no target is held. Clears any stale weapon target and

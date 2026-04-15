@@ -19,10 +19,19 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions
         public static bool CanAgentMoveFreely(Agent agent)
         {
             var movementOrder = agent?.Formation?.GetReadonlyMovementOrderReference();
-            return movementOrder.HasValue
-                && (movementOrder.Value.OrderType == OrderType.Charge
-                    || movementOrder.Value.OrderType == OrderType.ChargeWithTarget
-                    || agent?.Formation?.AI?.ActiveBehavior?.GetType().Name.Contains("Skirmish") == true);
+            if (!movementOrder.HasValue) return false;
+
+            if (movementOrder.Value.OrderType == OrderType.Charge
+                || movementOrder.Value.OrderType == OrderType.ChargeWithTarget)
+                return true;
+
+            // BehaviorSkirmish, BehaviorSkirmishLine, and BehaviorSkirmishBehindFormation all
+            // allow agents to reposition freely. Use 'is' type checks rather than name-string
+            // matching so this remains correct if the engine classes are ever renamed.
+            var behavior = agent?.Formation?.AI?.ActiveBehavior;
+            return behavior is BehaviorSkirmish
+                or BehaviorSkirmishLine
+                or BehaviorSkirmishBehindFormation;
         }
     }
 }

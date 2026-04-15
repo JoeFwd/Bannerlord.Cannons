@@ -22,7 +22,7 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
     ///   <item><description><b>Expected casualties</b> — enfilade angle and formation density.</description></item>
     /// </list>
     ///
-    /// The final utility is capped at <see cref="FormationUtilityCap"/> so that
+    /// The final utility is capped at <see cref="ArtilleryAIConstants.FormationUtilityCap"/> so that
     /// siege weapons (scored 0.9–1.0 by <see cref="SiegeWeaponTargetSelector"/>)
     /// always take priority over infantry formations.
     ///
@@ -31,13 +31,8 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
     /// </summary>
     public class FormationTargetSelector : ITargetSelector
     {
-        // Utility ceiling for formation targets. Must remain below the minimum siege
-        // weapon score (0.9) so that any shootable siege weapon beats any formation.
-        private const float FormationUtilityCap = 0.85f;
-
         // Axis input ranges — these define the "full score" ceiling for each metric.
         // Values above the maximum are clamped to the maximum by the Axis class.
-        private const float MaxTargetRangeMetres  = 300f; // beyond this the cannon rarely hits
         private const float MaxUnitCount          = 70f;  // formations rarely exceed this size
         private const float MaxHostileProximityM  = 10f;  // metres to the nearest enemy formation
         private const float MaxExpectedCasualties = 20f;  // practical ceiling for enfilade score
@@ -52,7 +47,7 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
             {
                 // Distance axis: cubic curve — rewards mid-range (~150 m), penalises
                 // point-blank and max-range shots. See ScoringFormulas.DistanceScore.
-                new Axis(0, MaxTargetRangeMetres,
+                new Axis(0, ArtilleryAIConstants.MaxTargetRangeMetres,
                     x => ScoringFormulas.DistanceScore(x),
                     CommonAIDecisionFunctions.DistanceToTarget(() => _weapon.GameEntity.GlobalPosition)),
 
@@ -106,11 +101,11 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
                 Target target = ScoreFormation(formation);
                 target.SelectedWorldPosition = position;
 
-                if (target.UtilityValue == -1f || !_weapon.IsTargetInRange(position))
+                if (!_weapon.IsTargetInRange(position))
                     continue;
 
                 // Cap below siege-weapon tier so siege weapons always win.
-                target.UtilityValue = Math.Min(target.UtilityValue, FormationUtilityCap);
+                target.UtilityValue = Math.Min(target.UtilityValue, ArtilleryAIConstants.FormationUtilityCap);
                 list.Add(target);
             }
             return list;
