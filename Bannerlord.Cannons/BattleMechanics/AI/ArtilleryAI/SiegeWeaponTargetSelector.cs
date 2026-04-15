@@ -11,12 +11,23 @@ using TaleWorlds.MountAndBlade;
 namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
 {
     /// <summary>
-    /// Selects the most threatening enemy siege weapon (ram, tower, ballista, mangonel,
-    /// trebuchet, etc.) as a cannon target. Siege weapons always outscore infantry
-    /// formations (utility 0.9–1.0 vs formation cap of 0.85).
+    /// Selects the most threatening enemy siege weapon (battering ram, siege tower,
+    /// ballista, mangonel, trebuchet, etc.) as a cannon target.
+    ///
+    /// Siege weapons are always preferred over infantry formations: the utility score
+    /// returned here is in [0.9, 1.0], which is guaranteed to exceed the formation
+    /// selector's cap of 0.85 (<see cref="FormationTargetSelector"/>).
+    ///
+    /// Within the siege weapon tier, closer targets score higher (up to 10% bonus),
+    /// but any shootable siege weapon beats any formation regardless of distance.
     /// </summary>
     public class SiegeWeaponTargetSelector : ITargetSelector
     {
+        // Score range for siege weapon targets. The minimum (0.9) must exceed the
+        // formation utility cap (0.85) so siege weapons always win the priority race.
+        private const float MaxScoringRangeMetres = 300f; // flat penalty beyond this distance
+        private const float MaxDistancePenalty    = 0.1f; // score floor = 1.0 - 0.1 = 0.9
+
         private readonly BaseFieldSiegeWeapon _weapon;
 
         public SiegeWeaponTargetSelector(BaseFieldSiegeWeapon weapon)
@@ -24,37 +35,44 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
             _weapon = weapon;
         }
 
+        /// <summary>
+        /// Evaluates all shootable enemy siege weapons and returns the highest-scoring
+        /// one, or <c>null</c> if none are reachable.
+        /// </summary>
         public Target FindBestTarget()
         {
-            Target best = null;
+            Target? best = null;
             float bestScore = float.MinValue;
 
-            foreach (SiegeWeapon sw in GetEnemySiegeWeapons())
+            foreach (SiegeWeapon siegeWeapon in GetEnemySiegeWeapons())
             {
-                GameEntity entity = sw.GetTargetEntity();
+                GameEntity? entity = siegeWeapon.GetTargetEntity();
                 if (entity == null) continue;
 
                 Vec3 position = (entity.GlobalBoxMax + entity.GlobalBoxMin) * 0.5f;
-                if (!_weapon.IsTargetInRange(position)) continue;
+
+                if (!_weapon.IsTargetInRange(position))                  continue;
                 if (!_weapon.IsTargetWithinDirectionRestriction(position)) continue;
-                if (!_weapon.HasLineOfSightToTarget(position)) continue;
+                if (!_weapon.HasLineOfSightToTarget(position))            continue;
 
                 float distance = _weapon.GameEntity.GlobalPosition.Distance(position);
-                // Score 0.9 (max range) → 1.0 (close). Always above FormationUtilityCap (0.85).
-                float score = 1f - Math.Min(distance / 300f, 1f) * 0.1f;
+                float score    = ScoringFormulas.SiegeWeaponDistanceScore(distance, MaxScoringRangeMetres);
 
                 if (score > bestScore)
                 {
                     bestScore = score;
-                    var t = new Target { WeaponEntity = sw, SelectedWorldPosition = position };
-                    t.UtilityValue = score;
-                    best = t;
+                    best = new Target { WeaponEntity = siegeWeapon, SelectedWorldPosition = position };
+                    best.UtilityValue = score;
                 }
             }
 
             return best;
         }
 
+        /// <summary>
+        /// Enumerates active enemy siege weapons. Destroyed weapons (checked via
+        /// <see cref="DestructableComponent"/>) are excluded.
+        /// </summary>
         private IEnumerable<SiegeWeapon> GetEnemySiegeWeapons()
         {
             return Mission.Current.ActiveMissionObjects
