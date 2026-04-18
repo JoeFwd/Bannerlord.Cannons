@@ -60,11 +60,10 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         public string FireSoundID = "mortar_shot_1";
         public string FireSoundID2 = "mortar_shot_2";
         public float RecoilDuration = 0.8f;
-        public float Recoil2Duration = 0.8f;
+        public float PushDuration = 0.8f;
         public string DisplayName = "Artillery";
         public float BaseMuzzleVelocity = 40f;
         public float RecoilDistance = 0.6f;
-        public float RecoilWheelRadius = 0.3f;
         public string WheelRotationAxis = nameof(Bannerlord.Cannons.BattleMechanics.Artillery.WheelRotationAxis.X);
         public string CannonShotExplosionEffect;
         private CannonEntities _cannonEntities = null!;
@@ -177,17 +176,14 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             _wheelAnimator = new WheelAnimator(_cannonEntities.WheelL, _cannonEntities.WheelR, GetWheelRotationAxis);
             _recoilEffect = new RecoilEffect(_cannonEntities.Body, _wheelAnimator,
                 () => RecoilDuration,
-                () => Recoil2Duration,
-                ResolveRecoilDistance,
-                () => RecoilWheelRadius);
+                () => PushDuration,
+                () => RecoilDistance);
             _fireEffectsPlayer = new FireEffectsPlayer();
             _ammoPickupHandler = new AmmoPickupHandler();
             _ammoLoadHandler = new AmmoLoadHandler();
             _aiFormationManager = new AIFormationManager(_artilleryCrewProvider);
             _postReloadReadinessPolicy = new FixedDelayPostReloadReadinessPolicy();
         }
-
-        private float ResolveRecoilDistance() => RecoilDistance > 0f ? RecoilDistance : 0.6f;
 
         protected override void HandleUserAiming(float dt)
         {

@@ -34,7 +34,7 @@
 							<variable name="FireSoundID" value="mortar_shot_1"/>
 							<variable name="FireSoundID2" value="mortar_shot_2"/>
 							<variable name="RecoilDuration" value="0.800"/>
-							<variable name="Recoil2Duration" value="0.800"/>
+							<variable name="PushDuration" value="0.800"/>
 							<variable name="RecoilDistance" value="0.600"/>
 							<variable name="DisplayName" value="{=!}Mortar"/>
 							<variable name="BaseMuzzleVelocity" value="40.000"/>

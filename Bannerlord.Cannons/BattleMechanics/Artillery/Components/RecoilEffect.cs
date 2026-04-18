@@ -13,12 +13,13 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery.Components
     /// </summary>
     public class RecoilEffect : IRecoilEffect
     {
+        private const float DefaultRecoilWheelRadius = 0.3f;
+
         private readonly SynchedMissionObject _body;
         private readonly IWheelAnimator _wheelAnimator;
         private readonly Func<float> _recoilDuration;
-        private readonly Func<float> _recoil2Duration;
-        private readonly Func<float> _slideBackFrameFactor;
-        private readonly Func<float> _wheelRadius;
+        private readonly Func<float> _pushDuration;
+        private readonly Func<float> _recoilDistance;
 
         private MatrixFrame _slideBackFrameOrigGlobal;
         private MatrixFrame _slideBackFrameGlobal;
@@ -35,16 +36,14 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery.Components
             SynchedMissionObject body,
             IWheelAnimator wheelAnimator,
             Func<float> recoilDuration,
-            Func<float> recoil2Duration,
-            Func<float> slideBackFrameFactor,
-            Func<float> wheelRadius)
+            Func<float> pushDuration,
+            Func<float> recoilDistance)
         {
             _body = body;
             _wheelAnimator = wheelAnimator;
             _recoilDuration = recoilDuration;
-            _recoil2Duration = recoil2Duration;
-            _slideBackFrameFactor = slideBackFrameFactor;
-            _wheelRadius = wheelRadius;
+            _pushDuration = pushDuration;
+            _recoilDistance = recoilDistance;
         }
 
         /// <inheritdoc/>
@@ -53,7 +52,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery.Components
             _slideBackFrameOrigGlobal = _body.GameEntity.GetGlobalFrame();
             _slideBackFrameGlobal = _slideBackFrameOrigGlobal;
 
-            float slideBackDistance = _slideBackFrameFactor();
+            float slideBackDistance = ResolveRecoilDistance();
             Vec2 planarForward = _slideBackFrameOrigGlobal.rotation.f.AsVec2;
             if (planarForward.Length > 0.0001f)
             {
@@ -121,8 +120,8 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery.Components
 
             _returnTimer += dt;
 
-            float recoil2Duration = MathF.Max(0.0001f, _recoil2Duration());
-            float t = MathF.Min(_returnTimer / recoil2Duration, 1f);
+            float pushDuration = MathF.Max(0.0001f, _pushDuration());
+            float t = MathF.Min(_returnTimer / pushDuration, 1f);
 
             // Smoothstep: 3t^2 - 2t^3 — eases in then out, feels like a deliberate push.
             float tEased = t * t * (3f - 2f * t);
@@ -154,7 +153,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery.Components
                 return;
 
             // travel = recoilDistance * easedDelta ; angular = travel / radius
-            float radius = MathF.Max(0.001f, _wheelRadius());
+            float radius = MathF.Max(0.001f, DefaultRecoilWheelRadius);
             float travel = _slideDistance * tDelta;
             float angularDelta = travel / radius;
             if (angularDelta <= 0f)
@@ -162,6 +161,12 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery.Components
 
             float angularSpeed = angularDelta / dt;
             _wheelAnimator.Rotate(dt, direction, direction, angularSpeed);
+        }
+
+        private float ResolveRecoilDistance()
+        {
+            float recoilDistance = _recoilDistance();
+            return recoilDistance > 0f ? recoilDistance : 0.6f;
         }
     }
 }
