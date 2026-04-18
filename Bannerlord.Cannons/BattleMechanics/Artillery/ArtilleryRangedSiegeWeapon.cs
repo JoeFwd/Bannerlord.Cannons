@@ -64,7 +64,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         public string DisplayName = "Artillery";
         public float BaseMuzzleVelocity = 40f;
         public float RecoilDistance = 0.6f;
-        public float WheelRadius = 0.3f;
+        public float RecoilWheelRadius = 0.3f;
         public string WheelRotationAxis = nameof(Bannerlord.Cannons.BattleMechanics.Artillery.WheelRotationAxis.X);
         public string CannonShotExplosionEffect;
         private CannonEntities _cannonEntities = null!;
@@ -179,7 +179,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
                 () => RecoilDuration,
                 () => Recoil2Duration,
                 ResolveRecoilDistance,
-                () => WheelRadius);
+                () => RecoilWheelRadius);
             _fireEffectsPlayer = new FireEffectsPlayer();
             _ammoPickupHandler = new AmmoPickupHandler();
             _ammoLoadHandler = new AmmoLoadHandler();
@@ -243,7 +243,6 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             HandleWaitingTimer(dt);
             UpdateRecoilEffect(dt);
             HandleRecoilReturn(dt);
-            // UpdateWheelRotation(dt);
             HandleAITeamUsage();
         }
 

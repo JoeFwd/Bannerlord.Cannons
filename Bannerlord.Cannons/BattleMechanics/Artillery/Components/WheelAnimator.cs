@@ -14,6 +14,8 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery.Components
         private readonly SynchedMissionObject _wheelL;
         private readonly SynchedMissionObject _wheelR;
         private readonly Func<WheelRotationAxis> _axis;
+        private readonly Vec3 _wheelLocalOriginL;
+        private readonly Vec3 _wheelLocalOriginR;
 
         public WheelAnimator(
             SynchedMissionObject wheelL,
@@ -23,6 +25,8 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery.Components
             _wheelL = wheelL;
             _wheelR = wheelR;
             _axis = axis;
+            _wheelLocalOriginL = _wheelL.GameEntity.GetFrame().origin;
+            _wheelLocalOriginR = _wheelR.GameEntity.GetFrame().origin;
         }
 
         /// <inheritdoc/>
@@ -42,6 +46,9 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery.Components
                 frameR.rotation.RotateAboutSide(rightDir * dt * speed);
             }
 
+            // Keep wheel pivots fixed in local space. Only rotation should change per tick.
+            frameL.origin = _wheelLocalOriginL;
+            frameR.origin = _wheelLocalOriginR;
             _wheelL.GameEntity.SetFrame(ref frameL);
             _wheelR.GameEntity.SetFrame(ref frameR);
         }
