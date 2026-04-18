@@ -20,6 +20,12 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
 
     public class ArtilleryRangedSiegeWeapon : BaseFieldSiegeWeapon
     {
+        private enum CannonCycleState
+        {
+            None,
+            Push
+        }
+
         private IArtilleryCrewProvider _artilleryCrewProvider = null!;
         private ITargetingPolicy _targetingPolicy = null!;
 
@@ -68,14 +74,13 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         private IAmmoPickupHandler _ammoPickupHandler = null!;
         private IAmmoLoadHandler _ammoLoadHandler = null!;
         private IAIFormationManager _aiFormationManager = null!;
+        private IPostReloadReadinessPolicy _postReloadReadinessPolicy = null!;
         private float _verticalOffsetAngle;
         private MatrixFrame _barrelInitialLocalFrame;
         private Agent? _lastLoaderAgent;
         private StandingPoint? _waitStandingPoint;
         private float _lastCurrentDirection;
-        private float _waitTimerStart;
-        private bool _waitTimerRunning;
-        private bool _isRecoilReturning;
+        private CannonCycleState _cycleState;
         public float DirectionRestrictionDegrees = 100f;
 
         public override float DirectionRestriction => DirectionRestrictionDegrees * (MathF.PI / 180f);
@@ -179,6 +184,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             _ammoPickupHandler = new AmmoPickupHandler();
             _ammoLoadHandler = new AmmoLoadHandler();
             _aiFormationManager = new AIFormationManager(_artilleryCrewProvider);
+            _postReloadReadinessPolicy = new FixedDelayPostReloadReadinessPolicy();
         }
 
         private float ResolveRecoilDistance() => RecoilDistance > 0f ? RecoilDistance : 0.6f;
@@ -234,12 +240,14 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             HandleAmmoPickup();
             HandleAmmoLoad();
             ForceAmmoPointUsage();
-            HandleWaitingTimer();
+            HandleWaitingTimer(dt);
             UpdateRecoilEffect(dt);
             HandleRecoilReturn(dt);
             // UpdateWheelRotation(dt);
             HandleAITeamUsage();
         }
+
+        private bool IsPushInProgress() => _cycleState == CannonCycleState.Push;
 
         private void HandleAITeamUsage()
         {
@@ -263,15 +271,17 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             }
         }
 
-        private void HandleWaitingTimer()
+        private void HandleWaitingTimer(float dt)
         {
-            if (State != WeaponState.WaitingBeforeIdle || Mission.Current == null)
+            if (State != WeaponState.WaitingBeforeIdle)
                 return;
 
-            if (_waitTimerRunning && !_isRecoilReturning && Mission.Current.CurrentTime >= _waitTimerStart + 2f)
+            _postReloadReadinessPolicy.Update(dt);
+
+            if (!IsPushInProgress() && _postReloadReadinessPolicy.IsDelayElapsed)
             {
-                _waitTimerRunning = false;
-                State = WeaponState.Idle;
+                _postReloadReadinessPolicy.Reset();
+                EnterPushState();
             }
         }
 
@@ -284,6 +294,8 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
                     _loadAmmoEndAnimationActionIndex,
                     OriginalMissileItem))
             {
+                _postReloadReadinessPolicy.MarkReloadCompleted();
+
                 State = WeaponState.WaitingBeforeIdle;
             }
         }
@@ -318,13 +330,23 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
                     DoSlideBack();
                     break;
                 case WeaponState.WaitingBeforeIdle:
-                    _isRecoilReturning = true;
-                    _recoilEffect.BeginReturn();
+                    SendLoaderAgentToWaitingPoint();
                     break;
                 case WeaponState.LoadingAmmo:
                     SetActivationWaitingPoint(false);
                     break;
             }
+        }
+
+        private void EnterPushState()
+        {
+            _cycleState = CannonCycleState.Push;
+            _recoilEffect.BeginReturn();
+        }
+
+        private void ExitPushState()
+        {
+            _cycleState = CannonCycleState.None;
         }
 
         private void SendLoaderAgentToWaitingPoint()
@@ -347,15 +369,6 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             _waitStandingPoint?.SetIsDeactivatedSynched(!activate);
         }
 
-        private void SetWaitingTimer()
-        {
-            if (Mission.Current == null)
-                return;
-
-            _waitTimerStart = Mission.Current.CurrentTime;
-            _waitTimerRunning = true;
-        }
-
         private bool CanUseAsMachineMover(Agent? agent)
             => agent is { IsAIControlled: true }
                && agent.IsActive()
@@ -364,13 +377,12 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
 
         private void HandleRecoilReturn(float dt)
         {
-            if (!_isRecoilReturning) return;
+            if (!IsPushInProgress()) return;
 
             if (_recoilEffect.UpdateReturn(dt))
             {
-                _isRecoilReturning = false;
-                SendLoaderAgentToWaitingPoint();
-                SetWaitingTimer();
+                ExitPushState();
+                State = WeaponState.Idle;
             }
         }
 
