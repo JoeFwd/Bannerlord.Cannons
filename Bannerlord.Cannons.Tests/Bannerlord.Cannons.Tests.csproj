@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <LangVersion>12.0</LangVersion>
     <IsPackable>false</IsPackable>
+    <Platforms>x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,8 +13,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- TaleWorlds stubs — required to compile Target (extends Threat) and Axis (uses Target). -->
     <PackageReference Include="Bannerlord.ReferenceAssemblies.Core" Version="$(GameVersion).*-*" PrivateAssets="All" />
+    <PackageReference Include="Bannerlord.ReferenceAssemblies.Sandbox" Version="$(GameVersion).*-*" PrivateAssets="All" />
+    <PackageReference Include="Bannerlord.ReferenceAssemblies.Native" Version="$(GameVersion).*-*" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
@@ -23,7 +25,16 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
     <PackageReference Include="FluentAssertions" Version="6.12.1" />
   </ItemGroup>
+
+  <ItemGroup>
+    <TalewordsSources Include="$(MSBuildThisFileDirectory)..\..\..\bin\Win64_Shipping_Client\TaleWorlds*.dll"/>
+  </ItemGroup>
+
+  <Target Name="CopyTaleWorldsBinariesToLocalCache" AfterTargets="Build">
+    <Copy SourceFiles="@(TalewordsSources)" DestinationFolder="$(OutputPath)"/>
+  </Target>
 
 </Project>

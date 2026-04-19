@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+
+  <xs:element name="Cannons">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="Cannon" type="CannonType" maxOccurs="unbounded"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:complexType name="CannonType">
+    <xs:sequence>
+      <xs:element name="Id" type="xs:string"/>
+      <xs:element name="DisplayName" type="xs:string"/>
+      <xs:element name="SiegeDeploymentSelectionIconSpriteId" type="xs:string"/>
+      <xs:element name="MapSiegeMarkerSpriteId" type="xs:string"/>
+      <xs:element name="CampaignMapSelectionIconSpriteId" type="xs:string"/>
+      <xs:element name="CampaignMapPrefabName" type="xs:string"/>
+      <xs:element name="CampaignMapProjectilePrefabName" type="xs:string"/>
+      <xs:element name="CampaignMapReloadAnimationName" type="xs:string"/>
+      <xs:element name="CampaignMapFireAnimationName" type="xs:string"/>
+      <xs:element name="MachineType" type="xs:int"/>
+      <xs:element name="CampaignMapProjectileBoneIndex" type="xs:int"/>
+    </xs:sequence>
+  </xs:complexType>
+
+</xs:schema>

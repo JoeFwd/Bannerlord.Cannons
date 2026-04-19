@@ -1,0 +1,51 @@
+using System.Collections.Generic;
+using Bannerlord.Cannons.Logging;
+using TaleWorlds.GauntletUI;
+using TaleWorlds.TwoDimension;
+
+namespace Bannerlord.Cannons.Integration.UI
+{
+    public class BrushStyleExtender
+    {
+        private const string BrushLayerName = "Default";
+
+        private readonly SpriteData _spriteData;
+        private readonly ILogger _logger;
+        private readonly BrushFactory _brushFactory;
+
+        public BrushStyleExtender(BrushFactory brushFactory, SpriteData spriteData)
+        {
+            _logger = new ConsoleLogger<BrushStyleExtender>();
+            _brushFactory = brushFactory;
+            _spriteData = spriteData;
+        }
+
+        public void AddBrushStyle(string siegeEngineName, string fullSpriteName, string brushName)
+        {
+            Brush brush = _brushFactory.GetBrush(brushName);
+
+            if (brush is null)
+            {
+                _logger.Error($"Could not find any Brush with name {brushName}");
+                return;
+            }
+
+            Sprite sprite = _spriteData.GetSprite(fullSpriteName);
+
+            if (sprite is null)
+            {
+                _logger.Error($"Could not find any Sprite with name {fullSpriteName}. Icon will not show up.");
+                return;
+            }
+
+            brush.AddStyle(new Style(new List<BrushLayer>
+            {
+                new() { Name = BrushLayerName, Sprite = sprite }
+            })
+            {
+                Name = siegeEngineName,
+                DefaultStyle = brush.DefaultStyle
+            });
+        }
+    }
+}
