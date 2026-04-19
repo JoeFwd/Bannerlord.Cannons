@@ -144,6 +144,10 @@ namespace Bannerlord.Cannons.Infrastructure
             if (!bool.TryParse(isDefensiveSiegeWeaponValue, out var isDefensiveSiegeWeapon))
                 throw new InvalidOperationException($"Invalid IsDefensiveSiegeWeapon '{isDefensiveSiegeWeaponValue}' for cannon '{id}'.");
 
+            var isAttackerSiegeWeaponValue = element.Element("IsAttackerSiegeWeapon")?.Value;
+            if (!bool.TryParse(isAttackerSiegeWeaponValue, out var isAttackerSiegeWeapon))
+                throw new InvalidOperationException($"Invalid IsAttackerSiegeWeapon '{isAttackerSiegeWeaponValue}' for cannon '{id}'.");
+
             return new Cannon(
                 id,
                 displayName,
@@ -156,7 +160,8 @@ namespace Bannerlord.Cannons.Infrastructure
                 element.Element("CampaignMapFireAnimationName")?.Value ?? throw new InvalidOperationException($"CampaignMapFireAnimationName is required for cannon '{id}'"),
                 machineType,
                 boneIndex,
-                isDefensiveSiegeWeapon
+                isDefensiveSiegeWeapon,
+                isAttackerSiegeWeapon
             );
         }
     }

@@ -12,6 +12,7 @@ public record Cannon(
     string CampaignMapFireAnimationName,
     int MachineType,
     int CampaignMapProjectileBoneIndex,
-    bool IsDefensiveSiegeWeapon
+    bool IsDefensiveSiegeWeapon,
+    bool IsAttackerSiegeWeapon
 );
 }

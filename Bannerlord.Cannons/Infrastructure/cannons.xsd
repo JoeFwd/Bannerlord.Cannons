@@ -23,6 +23,7 @@
       <xs:element name="MachineType" type="xs:int"/>
       <xs:element name="CampaignMapProjectileBoneIndex" type="xs:int"/>
       <xs:element name="IsDefensiveSiegeWeapon" type="xs:boolean"/>
+      <xs:element name="IsAttackerSiegeWeapon" type="xs:boolean"/>
     </xs:sequence>
   </xs:complexType>
 

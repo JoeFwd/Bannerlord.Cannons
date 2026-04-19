@@ -20,5 +20,8 @@ public class CannonApi : ICannonApi
     public IEnumerable<Cannon> GetAllCannons() =>
         _cannonRegistry
             .GetAllCannons()
-            .Select(cannon => new Cannon(cannon.Id, cannon.IsDefensiveSiegeWeapon));
+            .Select(cannon => new Cannon(
+                cannon.Id,
+                cannon.IsDefensiveSiegeWeapon,
+                cannon.IsAttackerSiegeWeapon));
 }

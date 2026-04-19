@@ -125,6 +125,7 @@ public class CannonRegistryTests
             "test_fire",
             1,
             0,
+            true,
             true
         );
     }

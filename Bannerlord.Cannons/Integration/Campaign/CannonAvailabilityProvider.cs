@@ -18,6 +18,7 @@ namespace Bannerlord.Cannons.Integration.Campaign
 
         public IEnumerable<SiegeEngineType> GetAvailableCannons(PartyBase? party, BattleSideEnum side) =>
             _cannonRegistry.GetAllCannons()
+                .Where(cannon => side ==  BattleSideEnum.Attacker && cannon.IsAttackerSiegeWeapon || side ==  BattleSideEnum.Defender && cannon.IsDefensiveSiegeWeapon)
                 .Select(cannon => MBObjectManager.Instance.GetObject<SiegeEngineType>(cannon.Id))
                 .Where(se => se != null)
                 .ToList();

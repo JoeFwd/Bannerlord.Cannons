@@ -37,6 +37,7 @@ namespace Bannerlord.Cannons.Tests.Domain
             "ballista_a_mapicon_fire",
             8,
             0,
+            true,
             true
         );
 

@@ -21,6 +21,7 @@ namespace Bannerlord.Cannons.Tests.Domain
                 "test_fire",
                 1,
                 0,
+                true,
                 true
             );
 
@@ -37,6 +38,7 @@ namespace Bannerlord.Cannons.Tests.Domain
             Assert.Equal(1, properties.MachineType);
             Assert.Equal(0, properties.CampaignMapProjectileBoneIndex);
             Assert.True(properties.IsDefensiveSiegeWeapon);
+            Assert.True(properties.IsAttackerSiegeWeapon);
         }
 
         [Fact]
@@ -46,17 +48,17 @@ namespace Bannerlord.Cannons.Tests.Domain
             var properties1 = new Cannon(
                 "test_cannon", "Test",
                 "Order\\SiegeIcons\\sprite", "SPGeneral\\MapSiege\\sprite", "SPGeneral\\Siege\\sprite",
-                "prefab", "proj", "reload", "fire", 1, 0, true
+                "prefab", "proj", "reload", "fire", 1, 0, true, true
             );
             var properties2 = new Cannon(
                 "test_cannon", "Test",
                 "Order\\SiegeIcons\\sprite", "SPGeneral\\MapSiege\\sprite", "SPGeneral\\Siege\\sprite",
-                "prefab", "proj", "reload", "fire", 1, 0, true
+                "prefab", "proj", "reload", "fire", 1, 0, true, true
             );
             var properties3 = new Cannon(
                 "other_cannon", "Test",
                 "Order\\SiegeIcons\\sprite", "SPGeneral\\MapSiege\\sprite", "SPGeneral\\Siege\\sprite",
-                "prefab", "proj", "reload", "fire", 1, 0, true
+                "prefab", "proj", "reload", "fire", 1, 0, true, true
             );
 
             // Act & Assert
@@ -80,13 +82,14 @@ namespace Bannerlord.Cannons.Tests.Domain
                 "test_fire",
                 1,
                 0,
+                true,
                 true
             );
 
             // Act
             var (id, displayName, siegeDeploymentSelectionIconSpriteId, mapSiegeMarkerSpriteId, campaignMapSelectionIconSpriteId,
                 campaignMapPrefabName, campaignMapProjectilePrefabName, campaignMapReloadAnimationName,
-                campaignMapFireAnimationName, machineType, campaignMapProjectileBoneIndex, IsDefensiveSiegeWeapon) = properties;
+                campaignMapFireAnimationName, machineType, campaignMapProjectileBoneIndex, IsDefensiveSiegeWeapon, IsAttackerSiegeWeapon) = properties;
 
             // Assert
             Assert.Equal("test_cannon", id);
@@ -101,6 +104,7 @@ namespace Bannerlord.Cannons.Tests.Domain
             Assert.Equal(1, machineType);
             Assert.Equal(0, campaignMapProjectileBoneIndex);
             Assert.True(IsDefensiveSiegeWeapon);
+            Assert.True(IsAttackerSiegeWeapon);
         }
 
         [Fact]
@@ -119,6 +123,7 @@ namespace Bannerlord.Cannons.Tests.Domain
                 "test_fire",
                 1,
                 0,
+                true,
                 true
             );
 
