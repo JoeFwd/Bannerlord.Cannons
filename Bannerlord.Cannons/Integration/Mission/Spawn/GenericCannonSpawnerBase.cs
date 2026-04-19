@@ -1,3 +1,4 @@
+using System;
 using System.Reflection;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
@@ -6,12 +7,10 @@ using TaleWorlds.MountAndBlade.Objects.Siege;
 
 namespace Bannerlord.Cannons.Integration.Mission.Spawn
 {
-    public enum Team { Attacker, Defender }
-
     public class GenericCannonSpawnerBase : SpawnerBase
     {
         [EditorVisibleScriptComponentVariable(true)]
-        public Team Team = Team.Attacker;
+        public string Team = "Attacker";
 
         [EditorVisibleScriptComponentVariable(true)]
         public string SiegeEngineId = "";
@@ -25,7 +24,7 @@ namespace Bannerlord.Cannons.Integration.Mission.Spawn
         public override void AssignParameters(SpawnerEntityMissionHelper spawnerMissionHelper)
         {
             var cannon = spawnerMissionHelper.SpawnedEntity.GetFirstScriptInFamilyDescending<GenericCannon>();
-            cannon.SetSide(Team == Team.Attacker ? BattleSideEnum.Attacker : BattleSideEnum.Defender);
+            cannon.SetSide(string.Equals(Team, "Attacker", StringComparison.OrdinalIgnoreCase) ? BattleSideEnum.Attacker : BattleSideEnum.Defender);
             CopyFieldsToCannon(cannon);
         }
 
