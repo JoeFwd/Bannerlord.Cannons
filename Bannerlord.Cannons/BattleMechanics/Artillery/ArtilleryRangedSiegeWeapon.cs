@@ -64,7 +64,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         public string DisplayName = "Artillery";
         public float BaseMuzzleVelocity = 40f;
         public float RecoilDistance = 0.6f;
-        public string WheelRotationAxis = nameof(Bannerlord.Cannons.BattleMechanics.Artillery.WheelRotationAxis.X);
+        public WheelRotationAxis WheelRotationAxis = WheelRotationAxis.X;
         public string CannonShotExplosionEffect;
         private CannonEntities _cannonEntities = null!;
         private IRecoilEffect _recoilEffect = null!;
@@ -93,11 +93,6 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         public override UsableMachineAIBase CreateAIBehaviorObject() => Mission.Current.IsSiegeBattle && Side.Equals(BattleSideEnum.Attacker) ? new FieldSiegeWeaponAI(this) : new FieldBattleWeaponAI(this);
 
         // --- Init ---
-
-        private WheelRotationAxis GetWheelRotationAxis() =>
-            Enum.TryParse(WheelRotationAxis, out WheelRotationAxis axis)
-                ? axis
-                : Bannerlord.Cannons.BattleMechanics.Artillery.WheelRotationAxis.X;
 
         protected override void OnInit()
         {
@@ -173,7 +168,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
 
         private void InitialiseOrchestratorComponents()
         {
-            _wheelAnimator = new WheelAnimator(_cannonEntities.WheelL, _cannonEntities.WheelR, GetWheelRotationAxis);
+            _wheelAnimator = new WheelAnimator(_cannonEntities.WheelL, _cannonEntities.WheelR, () => WheelRotationAxis);
             _recoilEffect = new RecoilEffect(_cannonEntities.Body, _wheelAnimator,
                 () => RecoilDuration,
                 () => PushDuration,
