@@ -22,6 +22,7 @@
       <xs:element name="CampaignMapFireAnimationName" type="xs:string"/>
       <xs:element name="MachineType" type="xs:int"/>
       <xs:element name="CampaignMapProjectileBoneIndex" type="xs:int"/>
+      <xs:element name="IsDefensiveSiegeWeapon" type="xs:boolean"/>
     </xs:sequence>
   </xs:complexType>
 

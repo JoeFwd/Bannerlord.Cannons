@@ -140,6 +140,10 @@ namespace Bannerlord.Cannons.Infrastructure
             if (!int.TryParse(boneIndexValue, out var boneIndex))
                 throw new InvalidOperationException($"Invalid CampaignMapProjectileBoneIndex '{boneIndexValue}' for cannon '{id}'.");
 
+            var isDefensiveSiegeWeaponValue = element.Element("IsDefensiveSiegeWeapon")?.Value;
+            if (!bool.TryParse(isDefensiveSiegeWeaponValue, out var isDefensiveSiegeWeapon))
+                throw new InvalidOperationException($"Invalid IsDefensiveSiegeWeapon '{isDefensiveSiegeWeaponValue}' for cannon '{id}'.");
+
             return new Cannon(
                 id,
                 displayName,
@@ -151,7 +155,8 @@ namespace Bannerlord.Cannons.Infrastructure
                 element.Element("CampaignMapReloadAnimationName")?.Value ?? throw new InvalidOperationException($"CampaignMapReloadAnimationName is required for cannon '{id}'"),
                 element.Element("CampaignMapFireAnimationName")?.Value ?? throw new InvalidOperationException($"CampaignMapFireAnimationName is required for cannon '{id}'"),
                 machineType,
-                boneIndex
+                boneIndex,
+                isDefensiveSiegeWeapon
             );
         }
     }

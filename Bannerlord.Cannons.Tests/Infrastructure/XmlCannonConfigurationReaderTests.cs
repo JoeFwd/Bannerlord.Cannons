@@ -40,6 +40,7 @@ public class XmlCannonConfigurationReaderTests : IDisposable
         Assert.Equal("Test Cannon", cannon.DisplayName);
         Assert.Equal(1, cannon.MachineType);
         Assert.Equal(0, cannon.CampaignMapProjectileBoneIndex);
+        Assert.True(cannon.IsDefensiveSiegeWeapon);
     }
 
     [Fact]
@@ -60,6 +61,7 @@ public class XmlCannonConfigurationReaderTests : IDisposable
     <CampaignMapFireAnimationName>test_fire</CampaignMapFireAnimationName>
     <MachineType>1</MachineType>
     <CampaignMapProjectileBoneIndex>0</CampaignMapProjectileBoneIndex>
+    <IsDefensiveSiegeWeapon>true</IsDefensiveSiegeWeapon>
   </Cannon>
 </Cannons>";
 
@@ -86,6 +88,7 @@ public class XmlCannonConfigurationReaderTests : IDisposable
     <CampaignMapFireAnimationName>test_fire</CampaignMapFireAnimationName>
     <MachineType>invalid</MachineType>
     <CampaignMapProjectileBoneIndex>0</CampaignMapProjectileBoneIndex>
+    <IsDefensiveSiegeWeapon>true</IsDefensiveSiegeWeapon>
   </Cannon>
 </Cannons>";
 
@@ -112,6 +115,7 @@ public class XmlCannonConfigurationReaderTests : IDisposable
     <CampaignMapFireAnimationName>test_fire</CampaignMapFireAnimationName>
     <MachineType>1</MachineType>
     <CampaignMapProjectileBoneIndex>invalid</CampaignMapProjectileBoneIndex>
+    <IsDefensiveSiegeWeapon>true</IsDefensiveSiegeWeapon>
   </Cannon>
 </Cannons>";
 
@@ -136,6 +140,7 @@ public class XmlCannonConfigurationReaderTests : IDisposable
     <CampaignMapFireAnimationName>test_fire</CampaignMapFireAnimationName>
     <MachineType>1</MachineType>
     <CampaignMapProjectileBoneIndex>0</CampaignMapProjectileBoneIndex>
+    <IsDefensiveSiegeWeapon>true</IsDefensiveSiegeWeapon>
   </Cannon>
 </Cannons>";
     }
@@ -156,6 +161,10 @@ public class XmlCannonConfigurationReaderTests : IDisposable
                 if (!int.TryParse(boneIndexStr, out var boneIndex))
                     throw new InvalidOperationException($"Invalid CampaignMapProjectileBoneIndex '{boneIndexStr}' for cannon '{id}'");
 
+                var IsDefensiveSiegeWeaponStr = element.Element("IsDefensiveSiegeWeapon")?.Value;
+                if (!bool.TryParse(IsDefensiveSiegeWeaponStr, out var IsDefensiveSiegeWeapon))
+                    throw new InvalidOperationException($"Invalid IsDefensiveSiegeWeapon '{IsDefensiveSiegeWeaponStr}' for cannon '{id}'");
+
                 return new Cannon(
                     id,
                     element.Element("DisplayName")?.Value ?? throw new InvalidOperationException($"DisplayName is required"),
@@ -167,7 +176,8 @@ public class XmlCannonConfigurationReaderTests : IDisposable
                     element.Element("CampaignMapReloadAnimationName")?.Value ?? throw new InvalidOperationException($"CampaignMapReloadAnimationName is required"),
                     element.Element("CampaignMapFireAnimationName")?.Value ?? throw new InvalidOperationException($"CampaignMapFireAnimationName is required"),
                     machineType,
-                    boneIndex
+                    boneIndex,
+                    IsDefensiveSiegeWeapon
                 );
             })
             .ToList();
