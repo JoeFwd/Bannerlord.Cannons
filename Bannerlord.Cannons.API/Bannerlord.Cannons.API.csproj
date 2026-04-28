@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>netstandard2.0</TargetFramework>
+		<Platforms>x64</Platforms>
+		<LangVersion>12.0</LangVersion>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="IsExternalInit" Version="1.0.3" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Bannerlord.Cannons.Application\Bannerlord.Cannons.Application.csproj" />
+		<ProjectReference Include="..\Bannerlord.Cannons.Infrastructure\Bannerlord.Cannons.Infrastructure.csproj" />
+		<ProjectReference Include="..\Bannerlord.Cannons.Domain\Bannerlord.Cannons.Domain.csproj" />
+	</ItemGroup>
+</Project>

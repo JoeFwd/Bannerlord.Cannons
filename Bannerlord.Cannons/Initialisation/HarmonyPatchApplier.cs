@@ -5,7 +5,7 @@ namespace Bannerlord.Cannons.Initialisation
 {
     public class HarmonyPatchApplier
     {
-        private static readonly Harmony Harmony = new Harmony("mod.harmony.bannerlord.cannons");
+        private static readonly HarmonyLib.Harmony Harmony = new HarmonyLib.Harmony("mod.harmony.bannerlord.cannons");
         private static bool _isPatched;
 
         public void Apply()

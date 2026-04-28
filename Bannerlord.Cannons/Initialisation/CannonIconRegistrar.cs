@@ -7,6 +7,13 @@ namespace Bannerlord.Cannons.Initialisation
 {
     public class CannonIconRegistrar
     {
+        private readonly ICannonRegistry _cannonRegistry;
+
+        public CannonIconRegistrar(ICannonRegistry cannonRegistry)
+        {
+            _cannonRegistry = cannonRegistry;
+        }
+
         public void Register()
         {
             var brushExtender = new BrushStyleExtender(
@@ -14,7 +21,7 @@ namespace Bannerlord.Cannons.Initialisation
                 UIResourceManager.SpriteData);
             var deploymentIconEnricher = new SiegeEngineDeploymentIconEnricher(brushExtender);
             var campaignMapIconEnricher = new CampaignMapSiegeEngineDeploymentIconEnricher(brushExtender);
-            var iconProvider = new CannonIconProvider(CannonRegistry.Instance);
+            var iconProvider = new CannonIconProvider(_cannonRegistry);
 
             foreach (var icon in iconProvider.GetSiegeEngineIcons())
             {

@@ -4,27 +4,33 @@ using Bannerlord.Cannons.Domain;
 using Bannerlord.Cannons.Infrastructure;
 using Bannerlord.Cannons.Infrastructure.Registry;
 using Bannerlord.Cannons.Integration.Mission.Spawn;
-using Bannerlord.Cannons.Logging;
 
 namespace Bannerlord.Cannons.Initialisation
 {
     public class CannonRegistryBootstrapper
     {
+        private readonly ICannonConfigurationReader _reader;
+        private readonly ValidateCannonsUseCase _validator;
+        private readonly CannonRegistry _registry;
+
+        public CannonRegistryBootstrapper(
+            ICannonConfigurationReader reader,
+            ValidateCannonsUseCase validator,
+            CannonRegistry registry)
+        {
+            _reader = reader;
+            _validator = validator;
+            _registry = registry;
+        }
+
         public IReadOnlyList<Cannon> Bootstrap()
         {
-            var loggerFactory = new ConsoleLoggerFactory();
-            var reader = new XmlCannonConfigurationReader(loggerFactory);
-            var validator = new ValidateCannonsUseCase(loggerFactory);
-            var validCannons = validator.GetValidCannons(reader.LoadCannons()).ToList();
-
-            var registry = new CannonRegistry();
+            var validCannons = _validator.GetValidCannons(_reader.LoadCannons()).ToList();
             foreach (var cannon in validCannons)
             {
                 var dynamicType = CannonTypeEmitter.EmitCannonType(cannon.Id);
-                registry.RegisterCannon(cannon, new GenericCannonFactory(cannon.Id, dynamicType));
+                _registry.RegisterCannon(cannon, new GenericCannonFactory(cannon.Id, dynamicType));
             }
-
-            CannonRegistry.Initialize(registry);
             return validCannons;
         }
     }

@@ -1,7 +1,8 @@
 using System;
+using Bannerlord.Cannons.DI;
 using Bannerlord.Cannons.Initialisation;
-using Bannerlord.Cannons.HarmonyPatches;
 using Bannerlord.Cannons.Integration.Campaign;
+using Microsoft.Extensions.DependencyInjection;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.MountAndBlade;
@@ -11,49 +12,57 @@ namespace Bannerlord.Cannons
 {
     public class SubModule : MBSubModuleBase
     {
-        private readonly CannonRegistryBootstrapper _cannonRegistryBootstrapper = new CannonRegistryBootstrapper();
-        private readonly DynamicScriptTypeRegistrar _dynamicScriptTypeRegistrar = new DynamicScriptTypeRegistrar();
-        private readonly CannonIconRegistrar _cannonIconRegistrar = new CannonIconRegistrar();
-        private readonly HarmonyPatchApplier _harmonyPatchApplier = new HarmonyPatchApplier();
-        private readonly CampaignModelRegistrar _campaignModelRegistrar = new CampaignModelRegistrar();
-        private readonly MissionLogicRegistrar _missionLogicRegistrar = new MissionLogicRegistrar();
-        private readonly DadgBattleSceneLoader _dadgBattleSceneLoader = new DadgBattleSceneLoader();
-        private readonly StaticScriptTypeRegistrar _staticScriptTypeRegistrar = new StaticScriptTypeRegistrar();
+        private readonly IServiceProvider _serviceProvider = new CannonsServiceContainer().Build();
+        private bool _isInitialised;
+
+        public SubModule()
+        {
+            CannonsRuntimeServices.Set(_serviceProvider);
+        }
+
+        private void EnsureInitialised()
+        {
+            if (_isInitialised)
+                return;
+
+            FixEnumEditorVariablePatch.Apply();
+            var validCannons = _serviceProvider.GetRequiredService<CannonRegistryBootstrapper>().Bootstrap();
+            _serviceProvider.GetRequiredService<DynamicScriptTypeRegistrar>().Register(validCannons);
+            _serviceProvider.GetRequiredService<CannonIconRegistrar>().Register();
+            HarmonyDependencyInjectionCompat.ApplyPatches(_serviceProvider);
+
+            _isInitialised = true;
+        }
 
         protected override void OnSubModuleLoad()
         {
             base.OnSubModuleLoad();
-
-            FixEnumEditorVariablePatch.Apply();
-            var validCannons = _cannonRegistryBootstrapper.Bootstrap();
-            _dynamicScriptTypeRegistrar.Register(validCannons);
-            _cannonIconRegistrar.Register();
-            _harmonyPatchApplier.Apply();
+            EnsureInitialised();
         }
 
         protected override void InitializeGameStarter(Game game, IGameStarter starterObject)
         {
-            _campaignModelRegistrar.Register(game, starterObject);
+            _serviceProvider.GetRequiredService<CampaignModelRegistrar>().Register(game, starterObject);
         }
 
         public override void OnMissionBehaviorInitialize(Mission mission)
         {
-            _missionLogicRegistrar.AddTo(mission);
+            _serviceProvider.GetRequiredService<MissionLogicRegistrar>().AddTo(mission);
         }
 
 #if !IS_MULTIPLAYER_BUILD && !RELEASE
         public override void OnGameInitializationFinished(Game game)
         {
             if (game.GameType is Campaign)
-                _dadgBattleSceneLoader.Load();
+                _serviceProvider.GetRequiredService<DadgBattleSceneLoader>().Load();
         }
 #endif
 
         public void Inject()
         {
             Module.CurrentModule.SubModules.Add(this);
-            _staticScriptTypeRegistrar.RegisterAllScriptComponentBehaviors();
-            _harmonyPatchApplier.Apply();
+            EnsureInitialised();
+            _serviceProvider.GetRequiredService<StaticScriptTypeRegistrar>().RegisterAllScriptComponentBehaviors();
         }
     }
 }
