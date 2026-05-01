@@ -1,7 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
+using System;
 using Bannerlord.Cannons.Domain;
-using Bannerlord.Cannons.Logging;
+using Microsoft.Extensions.Logging;
 using Xunit;
 
 namespace Bannerlord.Cannons.Tests.Domain
@@ -12,17 +13,27 @@ namespace Bannerlord.Cannons.Tests.Domain
         {
             public List<string> WarnMessages { get; } = new();
 
-            public void Debug(string message, System.Exception? exception = null) { }
-            public void Info(string message, System.Exception? exception = null) { }
-            public void Warn(string message, System.Exception? exception = null) => WarnMessages.Add(message);
-            public void Error(string message, System.Exception? exception = null) { }
-            public void Fatal(string message, System.Exception? exception = null) { }
+            public IDisposable BeginScope<TState>(TState state) => NullScope.Instance;
+            public bool IsEnabled(LogLevel logLevel) => true;
+            public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, System.Exception exception, System.Func<TState, System.Exception, string> formatter)
+            {
+                if (logLevel == LogLevel.Warning)
+                    WarnMessages.Add(formatter(state, exception));
+            }
         }
 
         private sealed class FakeLoggerFactory : ILoggerFactory
         {
             public FakeLogger Logger { get; } = new();
-            public ILogger CreateLogger<T>() => Logger;
+            public void AddProvider(ILoggerProvider provider) { }
+            public ILogger CreateLogger(string categoryName) => Logger;
+            public void Dispose() { }
+        }
+
+        private sealed class NullScope : IDisposable
+        {
+            public static readonly NullScope Instance = new();
+            public void Dispose() { }
         }
 
         private static Cannon ValidCannon(string id = "cannon_a") => new(

@@ -1,8 +1,6 @@
 using System;
-using Bannerlord.Cannons.Infrastructure.Logging;
 using Bannerlord.Cannons.Infrastructure.Registry;
-using Bannerlord.Cannons.Logging;
-using MelLoggerFactory = Microsoft.Extensions.Logging.ILoggerFactory;
+using Microsoft.Extensions.Logging;
 
 namespace Bannerlord.Cannons.Api;
 
@@ -16,15 +14,19 @@ public static class CannonApiFactory
     /// (e.g. from your own SubModule constructor).
     /// </para>
     /// </summary>
-    public static ICannonApi Create(MelLoggerFactory? loggerFactory = null)
+    public static ICannonApi Create(ILoggerFactory? loggerFactory = null)
     {
         if (loggerFactory != null)
-            LoggerFactoryProvider.Set(new MicrosoftLoggerFactoryAdapter(loggerFactory));
-        else
-            LoggerFactoryProvider.Set(new ConsoleLoggerFactory());
-        
+            SetExternalLoggerFactory(loggerFactory);
 
         return new CannonApi(ResolveRegistry);
+    }
+
+    private static void SetExternalLoggerFactory(ILoggerFactory loggerFactory)
+    {
+        var containerType = Type.GetType("Bannerlord.Cannons.DI.CannonsServiceContainer, Bannerlord.Cannons");
+        var setMethod = containerType?.GetMethod("SetExternalLoggerFactory");
+        setMethod?.Invoke(null, new object[] { loggerFactory });
     }
 
     private static ICannonRegistry? ResolveRegistry()

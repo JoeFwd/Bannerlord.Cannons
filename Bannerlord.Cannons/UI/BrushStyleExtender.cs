@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using Bannerlord.Cannons.Logging;
+using Microsoft.Extensions.Logging;
 using TaleWorlds.GauntletUI;
 using TaleWorlds.TwoDimension;
 
@@ -13,7 +13,10 @@ namespace Bannerlord.Cannons.Integration.UI
         private readonly ILogger _logger;
         private readonly BrushFactory _brushFactory;
 
-        public BrushStyleExtender(BrushFactory brushFactory, SpriteData spriteData, ILoggerFactory loggerFactory)
+        public BrushStyleExtender(
+            BrushFactory brushFactory,
+            SpriteData spriteData,
+            ILoggerFactory loggerFactory)
         {
             _logger = loggerFactory.CreateLogger<BrushStyleExtender>();
             _brushFactory = brushFactory;
@@ -26,7 +29,7 @@ namespace Bannerlord.Cannons.Integration.UI
 
             if (brush is null)
             {
-                _logger.Error($"Could not find any Brush with name {brushName}");
+                _logger.LogError($"Could not find any Brush with name {brushName}");
                 return;
             }
 
@@ -34,7 +37,7 @@ namespace Bannerlord.Cannons.Integration.UI
 
             if (sprite is null)
             {
-                _logger.Error($"Could not find any Sprite with name {fullSpriteName}. Icon will not show up.");
+                _logger.LogError($"Could not find any Sprite with name {fullSpriteName}. Icon will not show up.");
                 return;
             }
 

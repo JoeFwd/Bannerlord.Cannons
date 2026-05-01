@@ -7,7 +7,7 @@ using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Schema;
 using Bannerlord.Cannons.Domain;
-using Bannerlord.Cannons.Logging;
+using Microsoft.Extensions.Logging;
 using TaleWorlds.ModuleManager;
 
 namespace Bannerlord.Cannons.Infrastructure
@@ -19,9 +19,7 @@ namespace Bannerlord.Cannons.Infrastructure
         private readonly ILogger _logger;
 
         public XmlCannonConfigurationReader(ILoggerFactory loggerFactory)
-        {
-            _logger = loggerFactory.CreateLogger<XmlCannonConfigurationReader>();
-        }
+            => _logger = loggerFactory.CreateLogger<XmlCannonConfigurationReader>();
 
         public IEnumerable<Cannon> LoadCannons()
         {
@@ -35,12 +33,12 @@ namespace Bannerlord.Cannons.Infrastructure
 
                 if (!File.Exists(path)) continue;
 
-                _logger.Debug($"Loading cannons from module '{module.Id}' at '{path}'");
+                _logger.LogDebug($"Loading cannons from module '{module.Id}' at '{path}'");
                 allCannons.AddRange(LoadFromFile(path));
             }
 
             if (allCannons.Count == 0)
-                _logger.Warn("No cannons.xml found in any loaded module's ModuleData/CustomXml/ folder.");
+                _logger.LogWarning("No cannons.xml found in any loaded module's ModuleData/CustomXml/ folder.");
 
             return allCannons;
         }
@@ -53,12 +51,12 @@ namespace Bannerlord.Cannons.Infrastructure
                 var cannons = document.Descendants("Cannon")
                     .Select(CreateCannon).ToList();
                 foreach (var cannon in cannons)
-                    _logger.Debug($"Loaded '{cannon.Id}' cannon from '{xmlPath}'");
+                    _logger.LogDebug($"Loaded '{cannon.Id}' cannon from '{xmlPath}'");
                 return cannons;
             }
             catch (Exception ex)
             {
-                _logger.Error($"Failed to load cannons from '{xmlPath}': {ex.Message}");
+                _logger.LogError($"Failed to load cannons from '{xmlPath}': {ex.Message}");
                 return Enumerable.Empty<Cannon>();
             }
         }
@@ -71,11 +69,11 @@ namespace Bannerlord.Cannons.Infrastructure
                 if (schemaPath != null)
                     ValidateXmlAgainstSchema(xmlPath, schemaPath);
                 else
-                    _logger.Warn("Cannon XML schema not found, skipping validation");
+                    _logger.LogWarning("Cannon XML schema not found, skipping validation");
             }
             catch (Exception ex)
             {
-                _logger.Warn($"XML validation failed: {ex.Message}. Proceeding without schema validation.");
+                _logger.LogWarning($"XML validation failed: {ex.Message}. Proceeding without schema validation.");
             }
 
             return XDocument.Load(xmlPath);
@@ -109,20 +107,20 @@ namespace Bannerlord.Cannons.Infrastructure
                     var message = $"XML validation error: {e.Message} (Line: {e.Exception?.LineNumber}, Position: {e.Exception?.LinePosition})";
                     if (e.Severity == XmlSeverityType.Error)
                         throw new InvalidOperationException(message);
-                    _logger.Warn(message);
+                    _logger.LogWarning(message);
                 };
 
                 using var reader = XmlReader.Create(xmlPath, settings);
                 while (reader.Read()) { }
 
-                _logger.Debug("Cannon XML validation successful");
+                _logger.LogDebug("Cannon XML validation successful");
             }
             finally
             {
                 if (File.Exists(schemaPath))
                 {
                     try { File.Delete(schemaPath); }
-                    catch (Exception ex) { _logger.Warn($"Failed to delete temporary schema file: {ex.Message}"); }
+                    catch (Exception ex) { _logger.LogWarning($"Failed to delete temporary schema file: {ex.Message}"); }
                 }
             }
         }

@@ -5,7 +5,7 @@ using System.Linq;
 using System.Xml.Linq;
 using Bannerlord.Cannons.Domain;
 using Bannerlord.Cannons.Infrastructure;
-using Bannerlord.Cannons.Logging;
+using Microsoft.Extensions.Logging;
 using Xunit;
 
 namespace Bannerlord.Cannons.Tests.Infrastructure;
@@ -203,15 +203,21 @@ public class XmlCannonConfigurationReaderTests : IDisposable
 
     private class FakeLoggerFactory : ILoggerFactory
     {
-        public ILogger CreateLogger<T>() => new FakeLogger();
+        public void AddProvider(ILoggerProvider provider) { }
+        public ILogger CreateLogger(string categoryName) => new FakeLogger();
+        public void Dispose() { }
     }
 
     private class FakeLogger : ILogger
     {
-        public void Debug(string message, Exception? exception = null) { }
-        public void Info(string message, Exception? exception = null) { }
-        public void Warn(string message, Exception? exception = null) { }
-        public void Error(string message, Exception? exception = null) { }
-        public void Fatal(string message, Exception? exception = null) { }
+        public IDisposable BeginScope<TState>(TState state) => NullScope.Instance;
+        public bool IsEnabled(LogLevel logLevel) => true;
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter) { }
+    }
+
+    private sealed class NullScope : IDisposable
+    {
+        public static readonly NullScope Instance = new();
+        public void Dispose() { }
     }
 }

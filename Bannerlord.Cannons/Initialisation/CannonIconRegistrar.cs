@@ -1,7 +1,7 @@
 using Bannerlord.Cannons.Infrastructure.Icons;
 using Bannerlord.Cannons.Infrastructure.Registry;
 using Bannerlord.Cannons.Integration.UI;
-using Bannerlord.Cannons.Logging;
+using Microsoft.Extensions.Logging;
 using TaleWorlds.Engine.GauntletUI;
 
 namespace Bannerlord.Cannons.Initialisation
