@@ -1,4 +1,5 @@
 using System;
+using Bannerlord.Cannons.DI;
 using Bannerlord.Cannons.Infrastructure.Registry;
 using Microsoft.Extensions.Logging;
 
@@ -24,16 +25,12 @@ public static class CannonApiFactory
 
     private static void SetExternalLoggerFactory(ILoggerFactory loggerFactory)
     {
-        var containerType = Type.GetType("Bannerlord.Cannons.DI.CannonsServiceContainer, Bannerlord.Cannons");
-        var setMethod = containerType?.GetMethod("SetExternalLoggerFactory");
-        setMethod?.Invoke(null, new object[] { loggerFactory });
+        CannonsServiceContainer.SetExternalLoggerFactory(loggerFactory);
     }
 
     private static ICannonRegistry? ResolveRegistry()
     {
-        var runtimeServicesType = Type.GetType("Bannerlord.Cannons.DI.CannonsRuntimeServices, Bannerlord.Cannons");
-        var currentProperty = runtimeServicesType?.GetProperty("Current");
-        var serviceProvider = currentProperty?.GetValue(null) as IServiceProvider;
+        var serviceProvider = CannonsRuntimeServices.Current;
         return serviceProvider?.GetService(typeof(ICannonRegistry)) as ICannonRegistry;
     }
 }

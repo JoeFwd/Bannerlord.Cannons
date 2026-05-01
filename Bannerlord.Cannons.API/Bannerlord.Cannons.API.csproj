@@ -12,6 +12,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\Bannerlord.Cannons\Bannerlord.Cannons.csproj" />
 		<ProjectReference Include="..\Bannerlord.Cannons.Application\Bannerlord.Cannons.Application.csproj" />
 		<ProjectReference Include="..\Bannerlord.Cannons.Infrastructure\Bannerlord.Cannons.Infrastructure.csproj" />
 		<ProjectReference Include="..\Bannerlord.Cannons.Domain\Bannerlord.Cannons.Domain.csproj" />
