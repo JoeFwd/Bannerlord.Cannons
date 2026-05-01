@@ -2,6 +2,7 @@ using System;
 using Bannerlord.Cannons.DI;
 using Bannerlord.Cannons.Initialisation;
 using Bannerlord.Cannons.Integration.Campaign;
+using Harmony.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
@@ -12,30 +13,28 @@ namespace Bannerlord.Cannons
 {
     public class SubModule : MBSubModuleBase
     {
-        private readonly IServiceProvider _serviceProvider = new CannonsServiceContainer().Build();
+        private IServiceProvider _serviceProvider = null!;
         private bool _isInitialised;
-
-        public SubModule()
-        {
-            CannonsRuntimeServices.Set(_serviceProvider);
-        }
 
         private void EnsureInitialised()
         {
             if (_isInitialised)
                 return;
 
+            
             FixEnumEditorVariablePatch.Apply();
             var validCannons = _serviceProvider.GetRequiredService<CannonRegistryBootstrapper>().Bootstrap();
             _serviceProvider.GetRequiredService<DynamicScriptTypeRegistrar>().Register(validCannons);
             _serviceProvider.GetRequiredService<CannonIconRegistrar>().Register();
-            HarmonyDependencyInjectionCompat.ApplyPatches(_serviceProvider);
+            _serviceProvider.GetRequiredService<IHarmonyPatcher>().ApplyPatches();
 
             _isInitialised = true;
         }
 
         protected override void OnSubModuleLoad()
         {
+            _serviceProvider = new CannonsServiceContainer().Build();
+            CannonsRuntimeServices.Set(_serviceProvider);
             base.OnSubModuleLoad();
             EnsureInitialised();
         }
