@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <Version>1.0.0</Version>
+    <PackageId>Bannerlord.Cannons.Module</PackageId>
+    <IsPackable>false</IsPackable>
     <TargetFramework>netstandard2.0</TargetFramework>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <Platforms>x64</Platforms>

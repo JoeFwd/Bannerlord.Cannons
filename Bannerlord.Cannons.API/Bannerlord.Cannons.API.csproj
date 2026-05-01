@@ -1,6 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
+		<PackageId>Bannerlord.Cannons</PackageId>
+		<Title>Bannerlord.Cannons</Title>
+		<IsPackable>true</IsPackable>
 		<TargetFramework>netstandard2.0</TargetFramework>
 		<Platforms>x64</Platforms>
 		<LangVersion>12.0</LangVersion>
@@ -12,9 +15,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\Bannerlord.Cannons\Bannerlord.Cannons.csproj" />
-		<ProjectReference Include="..\Bannerlord.Cannons.Application\Bannerlord.Cannons.Application.csproj" />
-		<ProjectReference Include="..\Bannerlord.Cannons.Infrastructure\Bannerlord.Cannons.Infrastructure.csproj" />
-		<ProjectReference Include="..\Bannerlord.Cannons.Domain\Bannerlord.Cannons.Domain.csproj" />
+		<ProjectReference Include="..\Bannerlord.Cannons\Bannerlord.Cannons.csproj" PrivateAssets="all" />
+		<ProjectReference Include="..\Bannerlord.Cannons.Application\Bannerlord.Cannons.Application.csproj" PrivateAssets="all" />
+		<ProjectReference Include="..\Bannerlord.Cannons.Infrastructure\Bannerlord.Cannons.Infrastructure.csproj" PrivateAssets="all" />
+		<ProjectReference Include="..\Bannerlord.Cannons.Domain\Bannerlord.Cannons.Domain.csproj" PrivateAssets="all" />
 	</ItemGroup>
 </Project>
