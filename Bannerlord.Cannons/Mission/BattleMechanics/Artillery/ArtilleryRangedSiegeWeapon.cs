@@ -123,6 +123,9 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             base.OnRemoved(removeReason);
             if (Mission.Current != null)
                 Mission.Current.OnBeforeAgentRemoved -= OnBeforeAgentRemoved;
+
+            foreach (var formation in UserFormations.ToList())
+                formation.StopUsingMachine(this);
         }
 
         private void OnBeforeAgentRemoved(Agent affectedAgent, Agent affectorAgent, AgentState agentState, KillingBlow killingBlow)
@@ -234,15 +237,16 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             HandleWaitingTimer(dt);
             UpdateRecoilEffect(dt);
             HandleRecoilReturn(dt);
-            HandleAITeamUsage();
+            // TODO: use that for field battles because there is no native team siege engine behaviour 
+            // HandleAITeamUsage(dt);
         }
 
         private bool IsPushInProgress() => _cycleState == CannonCycleState.Push;
 
-        private void HandleAITeamUsage()
+        private void HandleAITeamUsage(float dt)
         {
-            if (Team != null)
-                _aiFormationManager.Update(Team, UserFormations, this);
+            if (Team == null) return;
+            _aiFormationManager.Update(Team, UserFormations, this);
         }
 
         private void CheckNullReloaderOriginalPoint()

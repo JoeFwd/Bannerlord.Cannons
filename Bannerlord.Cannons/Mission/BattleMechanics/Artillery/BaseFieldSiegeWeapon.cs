@@ -19,7 +19,14 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         public override BattleSideEnum Side => _side;
         public void SetSide(BattleSideEnum side) => _side = side;
         public Target Target { get; protected set; }
-        public Team Team { get; set; }
+        private Team _team;
+        public Team Team
+        {
+            get => _team ??= Side == BattleSideEnum.Attacker
+                ? Mission.Current?.Teams.Attacker
+                : Mission.Current?.Teams.Defender;
+            set => _team = value;
+        }
         public void SetTarget(Target target) => Target = target;
         public void ClearTarget() => Target = null;
 
