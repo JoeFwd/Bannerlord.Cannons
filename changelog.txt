@@ -1,4 +1,17 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.0
+Game Versions: v1.2.12
+* breaking change: remove `CannonSystemInitialiser` and the `.Inject()` initialisation path; client modules must now declare `Bannerlord.Cannons.SubModule` in `SubModule.xml` and let Bannerlord initialise it through the normal submodule lifecycle
+* breaking change: split the codebase into `Bannerlord.Cannons.API`, `Bannerlord.Cannons.Application`, `Bannerlord.Cannons.Domain`, and `Bannerlord.Cannons.Infrastructure`; public consumers should reference `Bannerlord.Cannons.API` instead of internal implementation namespaces
+* feat(api): add `Bannerlord.Cannons.Api.CannonApiFactory` and `ICannonApi` so client modules can query registered cannons through `Cannon.Id`, `Cannon.IsDefensiveSiegeWeapon`, and `Cannon.IsAttackerSiegeWeapon`
+* feat(campaign): load cannon definitions from every loaded module's `ModuleData/CustomXml/cannons.xml` and make registered cannons available on the campaign map siege deployment UI for attacker and/or defender sides
+* feat(ai): improve defensive cannon target selection so defender artillery can prioritize more relevant enemy siege weapons and formations
+* feat(editor): add `CannonTrajectoryVisualiser`, an editor script that previews cannon trajectory volumes from spawner muzzle velocity and angle restrictions
+* feat(mission): add a post-reload push state to the cannon firing cycle; cannoneers now fire, the cannon recoils, the loader loads the cannonball, the crew waits 1.5 seconds, pushes the cannon back into position, then resumes firing
+* breaking change: refactor mission cannon script properties, including clearer recoil/push timing via `RecoilDuration` and `PushDuration`, explicit `RecoilDistance`, enum-based `WheelRotationAxis`, and configurable `DirectionRestrictionDegrees`
+* refactor: move startup responsibilities into dedicated initialisation services and register Harmony patches through `Harmony.DependencyInjection`
+* feat(logging): switch internal logging to `Microsoft.Extensions.Logging`; clients can pass an external `ILoggerFactory` to `CannonApiFactory.Create(...)`
+---------------------------------------------------------------------------------------------------
 Version: 0.4.1
 Game Versions: v1.2.12
 * fix: avoid crash when selecting a game entity in the inspector that has the ArtilleryRangedSiegeWeapon script but is a dynamically created C# subtype
