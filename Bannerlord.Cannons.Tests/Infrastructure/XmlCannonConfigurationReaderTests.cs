@@ -14,13 +14,11 @@ public class XmlCannonConfigurationReaderTests : IDisposable
 {
     private readonly string _testXmlPath;
     private readonly FakeLoggerFactory _loggerFactory;
-    private readonly XmlCannonConfigurationReader _reader;
 
     public XmlCannonConfigurationReaderTests()
     {
         _testXmlPath = Path.GetTempFileName();
         _loggerFactory = new FakeLoggerFactory();
-        _reader = new XmlCannonConfigurationReader(_loggerFactory);
     }
 
     [Fact]
@@ -30,8 +28,8 @@ public class XmlCannonConfigurationReaderTests : IDisposable
         var validXml = CreateValidCannonXml();
         File.WriteAllText(_testXmlPath, validXml);
 
-        // Mock ResourceLocator to return our test path
-        var cannons = LoadCannonsFromXml(validXml);
+        var reader = new XmlCannonConfigurationReader(_loggerFactory, new FakeCannonConfigurationPathProvider(_testXmlPath));
+        var cannons = reader.LoadCannons();
 
         // Assert
         Assert.Single(cannons);
@@ -199,6 +197,7 @@ public class XmlCannonConfigurationReaderTests : IDisposable
         {
             File.Delete(_testXmlPath);
         }
+
     }
 
     private class FakeLoggerFactory : ILoggerFactory
@@ -219,5 +218,17 @@ public class XmlCannonConfigurationReaderTests : IDisposable
     {
         public static readonly NullScope Instance = new();
         public void Dispose() { }
+    }
+
+    private sealed class FakeCannonConfigurationPathProvider : ICannonConfigurationPathProvider
+    {
+        private readonly IEnumerable<string> _paths;
+
+        public FakeCannonConfigurationPathProvider(params string[] paths)
+        {
+            _paths = paths;
+        }
+
+        public IEnumerable<string> GetConfigurationPaths() => _paths;
     }
 }

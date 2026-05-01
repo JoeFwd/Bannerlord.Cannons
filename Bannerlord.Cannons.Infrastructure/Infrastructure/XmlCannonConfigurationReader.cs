@@ -8,32 +8,31 @@ using System.Xml.Linq;
 using System.Xml.Schema;
 using Bannerlord.Cannons.Domain;
 using Microsoft.Extensions.Logging;
-using TaleWorlds.ModuleManager;
 
 namespace Bannerlord.Cannons.Infrastructure
 {
     public class XmlCannonConfigurationReader : ICannonConfigurationReader
     {
-        private const string CannonXmlRelativePath = "ModuleData/CustomXml/cannons.xml";
+        private const string EmbeddedSchemaFileName = "cannons.xsd";
 
         private readonly ILogger _logger;
+        private readonly ICannonConfigurationPathProvider _configurationPathProvider;
 
-        public XmlCannonConfigurationReader(ILoggerFactory loggerFactory)
-            => _logger = loggerFactory.CreateLogger<XmlCannonConfigurationReader>();
+        public XmlCannonConfigurationReader(ILoggerFactory loggerFactory, ICannonConfigurationPathProvider configurationPathProvider)
+        {
+            _logger = loggerFactory.CreateLogger<XmlCannonConfigurationReader>();
+            _configurationPathProvider = configurationPathProvider;
+        }
 
         public IEnumerable<Cannon> LoadCannons()
         {
             var allCannons = new List<Cannon>();
 
-            foreach (var module in ModuleHelper.GetModules())
+            foreach (var path in _configurationPathProvider.GetConfigurationPaths())
             {
-                var path = Path.Combine(
-                    ModuleHelper.GetModuleFullPath(module.Id),
-                    CannonXmlRelativePath);
-
                 if (!File.Exists(path)) continue;
 
-                _logger.LogDebug($"Loading cannons from module '{module.Id}' at '{path}'");
+                _logger.LogDebug($"Loading cannons from '{path}'");
                 allCannons.AddRange(LoadFromFile(path));
             }
 
@@ -82,9 +81,10 @@ namespace Bannerlord.Cannons.Infrastructure
         private string? GetEmbeddedSchemaPath()
         {
             var assembly = Assembly.GetExecutingAssembly();
-            var resourceName = "Bannerlord.Cannons.Infrastructure.cannons.xsd";
+            var resourceName = assembly.GetManifestResourceNames()
+                .FirstOrDefault(name => name.EndsWith("." + EmbeddedSchemaFileName, StringComparison.OrdinalIgnoreCase));
 
-            if (!assembly.GetManifestResourceNames().Contains(resourceName)) return null;
+            if (resourceName == null) return null;
 
             using var stream = assembly.GetManifestResourceStream(resourceName);
             if (stream == null) return null;
