@@ -1,8 +1,11 @@
 using Bannerlord.Cannons.Domain;
+using Bannerlord.Cannons.Infrastructure.Logging;
 using Bannerlord.Cannons.Infrastructure.Registry;
-using Bannerlord.Cannons.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
+using DomainILoggerFactory = Bannerlord.Cannons.Logging.ILoggerFactory;
+using MelILoggerFactory = Microsoft.Extensions.Logging.ILoggerFactory;
+using MelILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace Bannerlord.Cannons.Infrastructure.DependencyInjection;
 
@@ -12,9 +15,13 @@ public static class CannonsInfrastructureServiceCollectionExtensions
     {
         services.AddSingleton<CannonRegistry>();
         services.AddSingleton<ICannonRegistry>(sp => sp.GetRequiredService<CannonRegistry>());
-        services.AddSingleton<ILoggerFactory, ConsoleLoggerFactory>();
-        services.AddSingleton<Microsoft.Extensions.Logging.ILoggerFactory>(NullLoggerFactory.Instance);
-        services.AddSingleton(typeof(Microsoft.Extensions.Logging.ILogger<>), typeof(NullLogger<>));
+
+        var adapter = Bannerlord.Cannons.Logging.LoggerFactoryProvider.Get() as MicrosoftLoggerFactoryAdapter
+                      ?? new MicrosoftLoggerFactoryAdapter(NullLoggerFactory.Instance);
+        services.AddSingleton<DomainILoggerFactory>(adapter);
+        services.AddSingleton<MelILoggerFactory>(adapter);
+        services.AddSingleton(typeof(Microsoft.Extensions.Logging.ILogger<>), typeof(LoggerWrapper<>));
+
         services.AddSingleton<ICannonConfigurationReader, XmlCannonConfigurationReader>();
         return services;
     }

@@ -13,9 +13,9 @@ namespace Bannerlord.Cannons.Integration.UI
         private readonly ILogger _logger;
         private readonly BrushFactory _brushFactory;
 
-        public BrushStyleExtender(BrushFactory brushFactory, SpriteData spriteData)
+        public BrushStyleExtender(BrushFactory brushFactory, SpriteData spriteData, ILoggerFactory loggerFactory)
         {
-            _logger = new ConsoleLogger<BrushStyleExtender>();
+            _logger = loggerFactory.CreateLogger<BrushStyleExtender>();
             _brushFactory = brushFactory;
             _spriteData = spriteData;
         }
