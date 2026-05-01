@@ -4,10 +4,8 @@ using Bannerlord.Cannons.Initialisation;
 using Bannerlord.Cannons.Integration.Campaign;
 using Harmony.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
-using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.MountAndBlade;
-using Module = TaleWorlds.MountAndBlade.Module;
 
 namespace Bannerlord.Cannons
 {
@@ -21,7 +19,6 @@ namespace Bannerlord.Cannons
             if (_isInitialised)
                 return;
 
-            
             FixEnumEditorVariablePatch.Apply();
             var validCannons = _serviceProvider.GetRequiredService<CannonRegistryBootstrapper>().Bootstrap();
             _serviceProvider.GetRequiredService<DynamicScriptTypeRegistrar>().Register(validCannons);
@@ -49,19 +46,5 @@ namespace Bannerlord.Cannons
             _serviceProvider.GetRequiredService<MissionLogicRegistrar>().AddTo(mission);
         }
 
-#if !IS_MULTIPLAYER_BUILD && !RELEASE
-        public override void OnGameInitializationFinished(Game game)
-        {
-            if (game.GameType is Campaign)
-                _serviceProvider.GetRequiredService<DadgBattleSceneLoader>().Load();
-        }
-#endif
-
-        public void Inject()
-        {
-            Module.CurrentModule.SubModules.Add(this);
-            EnsureInitialised();
-            _serviceProvider.GetRequiredService<StaticScriptTypeRegistrar>().RegisterAllScriptComponentBehaviors();
-        }
     }
 }

@@ -51,7 +51,6 @@ public class CannonsServiceContainer
         services.AddSingleton<CannonIconRegistrar>();
         services.AddSingleton<CampaignModelRegistrar>();
         services.AddSingleton<MissionLogicRegistrar>();
-        services.AddSingleton<DadgBattleSceneLoader>();
         services.AddSingleton<StaticScriptTypeRegistrar>();
 
         return services.BuildServiceProvider();
