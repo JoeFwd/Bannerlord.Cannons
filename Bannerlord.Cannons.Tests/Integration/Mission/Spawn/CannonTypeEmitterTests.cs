@@ -1,4 +1,5 @@
 using Bannerlord.Cannons.Integration.Mission.Spawn;
+using Microsoft.Extensions.Logging;
 using Xunit;
 
 namespace Bannerlord.Cannons.Tests.Integration.Mission.Spawn;
@@ -31,5 +32,13 @@ public class CannonTypeEmitterTests
         var type = CannonTypeEmitter.EmitCannonType("emitter_test_b");
 
         Assert.True(type.IsSubclassOf(typeof(GenericCannon)));
+    }
+
+    [Fact]
+    public void EmitCannonType_ReturnedTypeHasLoggerFactoryConstructor()
+    {
+        var type = CannonTypeEmitter.EmitCannonType("emitter_test_c");
+
+        Assert.NotNull(type.GetConstructor(new[] { typeof(ILoggerFactory) }));
     }
 }

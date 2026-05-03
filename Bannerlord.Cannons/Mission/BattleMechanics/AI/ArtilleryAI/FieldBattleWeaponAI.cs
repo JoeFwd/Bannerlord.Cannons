@@ -1,5 +1,6 @@
 using Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions;
 using Bannerlord.Cannons.BattleMechanics.Artillery;
+using Microsoft.Extensions.Logging;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
@@ -33,14 +34,18 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
         private readonly BaseFieldSiegeWeapon _weapon;
         private readonly ITargetSelector _siegeWeaponSelector;
         private readonly ITargetSelector _formationSelector;
+        private readonly ILogger _logger;
         private Target? _target;
         private Timer _findTargetTimer;
 
-        public FieldBattleWeaponAI(BaseFieldSiegeWeapon weapon) : base(weapon)
+        public FieldBattleWeaponAI(BaseFieldSiegeWeapon weapon, ILoggerFactory loggerFactory) : base(weapon)
         {
-            _weapon = weapon;
-            _siegeWeaponSelector = new SiegeWeaponTargetSelector(weapon);
-            _formationSelector   = new FormationTargetSelector(weapon);
+            _weapon = weapon ?? throw new System.ArgumentNullException(nameof(weapon));
+            if (loggerFactory == null) throw new System.ArgumentNullException(nameof(loggerFactory));
+
+            _siegeWeaponSelector = new SiegeWeaponTargetSelector(weapon, loggerFactory);
+            _formationSelector   = new FormationTargetSelector(weapon, loggerFactory);
+            _logger = loggerFactory.CreateLogger<FieldBattleWeaponAI>();
             _findTargetTimer     = new Timer(Mission.Current.CurrentTime, FindTargetInterval);
         }
 
@@ -80,6 +85,16 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
             UpdateLeadPosition(_weapon.Target);
             Vec3 aimPoint = _weapon.Target.SelectedWorldPosition;
 
+            if (aimPoint == Vec3.Zero)
+                return;
+
+            if (!_weapon.IsTargetWithinDirectionRestriction(aimPoint))
+            {
+                LogRejectedHeldTarget(_weapon.Target, "OutsideDirectionRestriction", aimPoint);
+                _target = null;
+                return;
+            }
+
             if (!_weapon.IsSafeToFire())
             {
                 // Friendly in the way — abandon target rather than waiting indefinitely.
@@ -115,9 +130,92 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
         private void TickWithoutTarget()
         {
             _weapon.ClearTarget();
-            if (_findTargetTimer.Check(Mission.Current.CurrentTime))
-                _target = _siegeWeaponSelector.FindBestTarget() ?? _formationSelector.FindBestTarget();
+            if (!_findTargetTimer.Check(Mission.Current.CurrentTime))
+                return;
+
+            Target? siegeWeaponTarget = _siegeWeaponSelector.FindBestTarget();
+            if (siegeWeaponTarget != null)
+            {
+                TrySetSelectedTarget(siegeWeaponTarget, "SiegeWeapon");
+                if (_target != null)
+                    return;
+            }
+
+            Target? formationTarget = _formationSelector.FindBestTarget();
+            if (formationTarget != null)
+                TrySetSelectedTarget(formationTarget, "Formation");
         }
+
+        private void TrySetSelectedTarget(Target target, string targetKind)
+        {
+            if (target.SelectedWorldPosition == Vec3.Zero)
+            {
+                LogRejectedSelectedTarget(target, targetKind, "MissingSelectedWorldPosition");
+                return;
+            }
+
+            if (!_weapon.IsTargetWithinDirectionRestriction(target.SelectedWorldPosition))
+            {
+                LogRejectedSelectedTarget(target, targetKind, "OutsideDirectionRestriction");
+                return;
+            }
+
+            _target = target;
+            LogSelectedTarget(_target, targetKind);
+        }
+
+        private void LogSelectedTarget(Target target, string targetKind)
+        {
+            _logger.LogInformation(
+                "Cannon selected target: Cannon={CannonName}, CannonEntity={CannonEntity}, CannonSide={CannonSide}, TargetKind={TargetKind}, FormationIndex={FormationIndex}, UnitCount={UnitCount}, ContainsPlayer={ContainsPlayer}, SiegeTargetEntity={SiegeTargetEntity}, Score={Score}.",
+                GetCannonName(),
+                _weapon.GameEntity?.Name ?? string.Empty,
+                _weapon.Side,
+                targetKind,
+                target.Formation?.Index,
+                target.Formation?.CountOfUnits,
+                target.Formation != null && FormationTargetSelector.ShouldFilterOutPlayerFormation(target.Formation),
+                target.WeaponEntity?.GetTargetEntity()?.Name ?? string.Empty,
+                target.UtilityValue);
+        }
+
+        private void LogRejectedSelectedTarget(Target target, string targetKind, string reason)
+        {
+            _logger.LogInformation(
+                "Cannon rejected selected target: Cannon={CannonName}, CannonEntity={CannonEntity}, CannonSide={CannonSide}, TargetKind={TargetKind}, Reason={Reason}, FormationIndex={FormationIndex}, UnitCount={UnitCount}, ContainsPlayer={ContainsPlayer}, SiegeTargetEntity={SiegeTargetEntity}, AimPoint={AimPoint}, Score={Score}.",
+                GetCannonName(),
+                _weapon.GameEntity?.Name ?? string.Empty,
+                _weapon.Side,
+                targetKind,
+                reason,
+                target.Formation?.Index,
+                target.Formation?.CountOfUnits,
+                target.Formation != null && FormationTargetSelector.ShouldFilterOutPlayerFormation(target.Formation),
+                target.WeaponEntity?.GetTargetEntity()?.Name ?? string.Empty,
+                target.SelectedWorldPosition,
+                target.UtilityValue);
+        }
+
+        private void LogRejectedHeldTarget(Target target, string reason, Vec3 aimPoint)
+        {
+            _logger.LogInformation(
+                "Cannon rejected held target: Cannon={CannonName}, CannonEntity={CannonEntity}, CannonSide={CannonSide}, Reason={Reason}, FormationIndex={FormationIndex}, UnitCount={UnitCount}, ContainsPlayer={ContainsPlayer}, SiegeTargetEntity={SiegeTargetEntity}, AimPoint={AimPoint}, Score={Score}.",
+                GetCannonName(),
+                _weapon.GameEntity?.Name ?? string.Empty,
+                _weapon.Side,
+                reason,
+                target.Formation?.Index,
+                target.Formation?.CountOfUnits,
+                target.Formation != null && FormationTargetSelector.ShouldFilterOutPlayerFormation(target.Formation),
+                target.WeaponEntity?.GetTargetEntity()?.Name ?? string.Empty,
+                aimPoint,
+                target.UtilityValue);
+        }
+
+        private string GetCannonName()
+            => _weapon is ArtilleryRangedSiegeWeapon artillery
+                ? artillery.DisplayName
+                : _weapon.GetType().Name;
 
         /// <summary>
         /// Updates <paramref name="target"/>'s <c>SelectedWorldPosition</c> to the

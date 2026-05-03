@@ -1,6 +1,7 @@
 using System;
 using System.Reflection;
 using System.Reflection.Emit;
+using Microsoft.Extensions.Logging;
 
 namespace Bannerlord.Cannons.Integration.Mission.Spawn
 {
@@ -20,7 +21,39 @@ namespace Bannerlord.Cannons.Integration.Mission.Spawn
                 typeof(GenericCannon)
             );
 
+            EmitParameterlessConstructor(typeBuilder);
+            EmitLoggerFactoryConstructor(typeBuilder);
+
             return typeBuilder.CreateTypeInfo()!.AsType();
+        }
+
+        private static void EmitLoggerFactoryConstructor(TypeBuilder typeBuilder)
+        {
+            var baseConstructor = typeof(GenericCannon).GetConstructor(new[] { typeof(ILoggerFactory) })!;
+            var constructor = typeBuilder.DefineConstructor(
+                MethodAttributes.Public,
+                CallingConventions.Standard,
+                new[] { typeof(ILoggerFactory) });
+
+            var il = constructor.GetILGenerator();
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldarg_1);
+            il.Emit(OpCodes.Call, baseConstructor);
+            il.Emit(OpCodes.Ret);
+        }
+
+        private static void EmitParameterlessConstructor(TypeBuilder typeBuilder)
+        {
+            var baseConstructor = typeof(GenericCannon).GetConstructor(Type.EmptyTypes)!;
+            var constructor = typeBuilder.DefineConstructor(
+                MethodAttributes.Public,
+                CallingConventions.Standard,
+                Type.EmptyTypes);
+
+            var il = constructor.GetILGenerator();
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Call, baseConstructor);
+            il.Emit(OpCodes.Ret);
         }
     }
 }

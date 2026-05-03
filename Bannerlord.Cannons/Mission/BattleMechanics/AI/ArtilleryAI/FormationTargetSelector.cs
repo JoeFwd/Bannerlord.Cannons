@@ -4,6 +4,7 @@ using System.Linq;
 using Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions;
 using Bannerlord.Cannons.BattleMechanics.Artillery;
 using Bannerlord.Cannons.Extensions;
+using Microsoft.Extensions.Logging;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
@@ -39,10 +40,13 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
 
         private readonly BaseFieldSiegeWeapon _weapon;
         private readonly List<Axis<Target>> _axes;
+        private readonly ILogger _logger;
 
-        public FormationTargetSelector(BaseFieldSiegeWeapon weapon)
+        public FormationTargetSelector(BaseFieldSiegeWeapon weapon, ILoggerFactory loggerFactory)
         {
-            _weapon = weapon;
+            _weapon = weapon ?? throw new ArgumentNullException(nameof(weapon));
+            _logger = (loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory)))
+                .CreateLogger<FormationTargetSelector>();
             _axes = new List<Axis<Target>>
             {
                 // Distance axis: cubic curve — rewards mid-range (~150 m), penalises
@@ -106,6 +110,17 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
 
                 // Cap below siege-weapon tier so siege weapons always win.
                 target.UtilityValue = Math.Min(target.UtilityValue, ArtilleryAIConstants.FormationUtilityCap);
+                if (target.UtilityValue <= 0f)
+                    continue;
+
+                LogFormationScore(formation, target);
+
+                if (ShouldFilterOutPlayerFormation(formation))
+                {
+                    LogPlayerFormationFiltered(formation);
+                    continue;
+                }
+
                 list.Add(target);
             }
             return list;
@@ -147,5 +162,45 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
                 .Where(t => t.Side.GetOppositeSide() == _weapon.Side)
                 .SelectMany(t => t.GetFormationsIncludingSpecial());
         }
+
+        internal static bool ShouldFilterOutPlayerFormation(Formation formation)
+            => formation.IsPlayerTroopInFormation || formation.HasPlayerControlledTroop;
+
+        private void LogFormationScore(Formation formation, Target target)
+        {
+            if (target.UtilityValue <= 0f)
+                return;
+
+            _logger.LogInformation(
+                "Cannon formation target score: Cannon={CannonName}, CannonEntity={CannonEntity}, CannonSide={CannonSide}, FormationIndex={FormationIndex}, UnitCount={UnitCount}, ContainsPlayer={ContainsPlayer}, IsPlayerTroopInFormation={IsPlayerTroopInFormation}, HasPlayerControlledTroop={HasPlayerControlledTroop}, IsPlayerOwner={IsPlayerOwner}, IsMainAgentFormation={IsMainAgentFormation}, Score={Score}.",
+                GetCannonName(),
+                _weapon.GameEntity?.Name ?? string.Empty,
+                _weapon.Side,
+                formation.Index,
+                formation.CountOfUnits,
+                ShouldFilterOutPlayerFormation(formation),
+                formation.IsPlayerTroopInFormation,
+                formation.HasPlayerControlledTroop,
+                formation.PlayerOwner == Agent.Main,
+                Agent.Main?.Formation == formation,
+                target.UtilityValue);
+        }
+
+        private void LogPlayerFormationFiltered(Formation formation)
+        {
+            _logger.LogInformation(
+                "Cannon target selection filtered out formation {FormationIndex} because it contains the player. Unit count: {UnitCount}. IsPlayerTroopInFormation={IsPlayerTroopInFormation}, HasPlayerControlledTroop={HasPlayerControlledTroop}, IsPlayerOwner={IsPlayerOwner}, IsMainAgentFormation={IsMainAgentFormation}.",
+                formation.Index,
+                formation.CountOfUnits,
+                formation.IsPlayerTroopInFormation,
+                formation.HasPlayerControlledTroop,
+                formation.PlayerOwner == Agent.Main,
+                Agent.Main?.Formation == formation);
+        }
+
+        private string GetCannonName()
+            => _weapon is ArtilleryRangedSiegeWeapon artillery
+                ? artillery.DisplayName
+                : _weapon.GetType().Name;
     }
 }

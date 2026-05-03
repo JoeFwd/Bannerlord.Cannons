@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions;
 using Bannerlord.Cannons.BattleMechanics.Artillery;
+using Microsoft.Extensions.Logging;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
@@ -28,10 +29,13 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
         private const float MaxDistancePenalty = 0.1f;
 
         private readonly BaseFieldSiegeWeapon _weapon;
+        private readonly ILogger _logger;
 
-        public SiegeWeaponTargetSelector(BaseFieldSiegeWeapon weapon)
+        public SiegeWeaponTargetSelector(BaseFieldSiegeWeapon weapon, ILoggerFactory loggerFactory)
         {
-            _weapon = weapon;
+            _weapon = weapon ?? throw new ArgumentNullException(nameof(weapon));
+            _logger = (loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory)))
+                .CreateLogger<SiegeWeaponTargetSelector>();
         }
 
         /// <summary>
@@ -56,6 +60,7 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
 
                 float distance = _weapon.GameEntity.GlobalPosition.Distance(position);
                 float score    = ScoringFormulas.SiegeWeaponDistanceScore(distance, ArtilleryAIConstants.MaxTargetRangeMetres);
+                LogSiegeWeaponScore(siegeWeapon, entity, distance, score);
 
                 if (score > bestScore)
                 {
@@ -67,6 +72,28 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
 
             return best;
         }
+
+        private void LogSiegeWeaponScore(SiegeWeapon siegeWeapon, GameEntity entity, float distance, float score)
+        {
+            if (score <= 0f)
+                return;
+
+            _logger.LogInformation(
+                "Cannon siege-weapon target score: Cannon={CannonName}, CannonEntity={CannonEntity}, CannonSide={CannonSide}, SiegeWeaponType={SiegeWeaponType}, SiegeTargetEntity={SiegeTargetEntity}, SiegeTargetSide={SiegeTargetSide}, Distance={Distance}, Score={Score}.",
+                GetCannonName(),
+                _weapon.GameEntity?.Name ?? string.Empty,
+                _weapon.Side,
+                siegeWeapon.GetType().Name,
+                entity.Name,
+                siegeWeapon.Side,
+                distance,
+                score);
+        }
+
+        private string GetCannonName()
+            => _weapon is ArtilleryRangedSiegeWeapon artillery
+                ? artillery.DisplayName
+                : _weapon.GetType().Name;
 
         /// <summary>
         /// Enumerates active enemy siege weapons. Destroyed weapons (checked via

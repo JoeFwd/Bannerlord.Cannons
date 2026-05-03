@@ -4,6 +4,7 @@ using Bannerlord.Cannons.Domain;
 using Bannerlord.Cannons.Infrastructure;
 using Bannerlord.Cannons.Infrastructure.Registry;
 using Bannerlord.Cannons.Integration.Mission.Spawn;
+using Microsoft.Extensions.Logging;
 
 namespace Bannerlord.Cannons.Initialisation
 {
@@ -12,15 +13,18 @@ namespace Bannerlord.Cannons.Initialisation
         private readonly ICannonConfigurationReader _reader;
         private readonly ValidateCannonsUseCase _validator;
         private readonly CannonRegistry _registry;
+        private readonly ILoggerFactory _loggerFactory;
 
         public CannonRegistryBootstrapper(
             ICannonConfigurationReader reader,
             ValidateCannonsUseCase validator,
-            CannonRegistry registry)
+            CannonRegistry registry,
+            ILoggerFactory loggerFactory)
         {
             _reader = reader;
             _validator = validator;
             _registry = registry;
+            _loggerFactory = loggerFactory;
         }
 
         public IReadOnlyList<Cannon> Bootstrap()
@@ -29,7 +33,7 @@ namespace Bannerlord.Cannons.Initialisation
             foreach (var cannon in validCannons)
             {
                 var dynamicType = CannonTypeEmitter.EmitCannonType(cannon.Id);
-                _registry.RegisterCannon(cannon, new GenericCannonFactory(cannon.Id, dynamicType));
+                _registry.RegisterCannon(cannon, new GenericCannonFactory(cannon.Id, dynamicType, _loggerFactory));
             }
             return validCannons;
         }

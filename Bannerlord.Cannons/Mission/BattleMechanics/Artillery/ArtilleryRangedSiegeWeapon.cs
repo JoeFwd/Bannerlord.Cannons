@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI;
 using Bannerlord.Cannons.BattleMechanics.Artillery.Components;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.InputSystem;
@@ -41,6 +43,8 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         private ActionIndexCache _reload2IdleActionIndex;
         private static readonly ActionIndexCache act_pickup_boulder_begin = ActionIndexCache.Create("act_pickup_boulder_begin");
         private static readonly ActionIndexCache act_pickup_boulder_end = ActionIndexCache.Create("act_pickup_boulder_end");
+        private readonly ILoggerFactory _loggerFactory;
+        private readonly ILogger _logger;
 
         public string IdleActionName;
         public string ShootActionName;
@@ -88,9 +92,31 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         protected override Vec3 ShootingDirection => Projectile.GameEntity.GetGlobalFrame().rotation.f;
         protected override float MaximumBallisticError => 0.2f;
 
+        public ArtilleryRangedSiegeWeapon()
+        {
+            _loggerFactory = NullLoggerFactory.Instance;
+            _logger = _loggerFactory.CreateLogger<ArtilleryRangedSiegeWeapon>();
+        }
+
+        protected ArtilleryRangedSiegeWeapon(ILoggerFactory loggerFactory)
+        {
+            _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
+            _logger = _loggerFactory.CreateLogger<ArtilleryRangedSiegeWeapon>();
+        }
+
         protected virtual ITargetingPolicy CreateTargetingPolicy() => new TargetingPolicy();
 
-        public override UsableMachineAIBase CreateAIBehaviorObject() => Mission.Current.IsSiegeBattle && Side.Equals(BattleSideEnum.Attacker) ? new FieldSiegeWeaponAI(this) : new FieldBattleWeaponAI(this);
+        public override UsableMachineAIBase CreateAIBehaviorObject()
+        {
+            _logger.LogInformation(
+                "Creating logged cannon AI for {CannonName}. Entity={CannonEntity}, Side={CannonSide}, IsSiegeBattle={IsSiegeBattle}.",
+                DisplayName,
+                GameEntity?.Name ?? string.Empty,
+                Side,
+                Mission.Current?.IsSiegeBattle ?? false);
+
+            return new FieldBattleWeaponAI(this, _loggerFactory);
+        }
 
         // --- Init ---
 
