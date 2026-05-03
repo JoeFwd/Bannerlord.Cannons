@@ -169,6 +169,13 @@ namespace Bannerlord.Cannons.Integration.Mission.Spawn
                     }
                     il.Emit(OpCodes.Ldstr, s);
                 }
+                else if (field.FieldType.IsEnum)
+                {
+                    var enumValue = value is string s
+                        ? Enum.Parse(field.FieldType, s)
+                        : value;
+                    il.Emit(OpCodes.Ldc_I4, Convert.ToInt32(enumValue));
+                }
                 else
                 {
                     il.Emit(OpCodes.Pop);
@@ -223,7 +230,7 @@ namespace Bannerlord.Cannons.Integration.Mission.Spawn
                             {
                                 var field = module.ResolveField(token);
                                 if (field != null && !defaults.ContainsKey(field.Name))
-                                    defaults[field.Name] = value;
+                                    defaults[field.Name] = FormatDefaultValue(field, value);
                             }
                             catch { /* unresolvable token */ }
 
@@ -234,6 +241,14 @@ namespace Bannerlord.Cannons.Integration.Mission.Spawn
                 }
                 i += GetILInstructionSize(il, i);
             }
+        }
+
+        private static object? FormatDefaultValue(FieldInfo field, object? value)
+        {
+            if (field.FieldType.IsEnum && value != null)
+                return Enum.GetName(field.FieldType, value) ?? value;
+
+            return value;
         }
 
         private static bool TryReadPushValue(byte[] il, int i, Module module, out object? value, out int size)
