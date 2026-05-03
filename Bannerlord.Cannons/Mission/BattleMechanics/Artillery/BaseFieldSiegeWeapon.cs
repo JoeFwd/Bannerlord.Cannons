@@ -113,13 +113,17 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         }
 
         /// <summary>
-        /// Returns true when the straight-line path from the muzzle to <paramref name="targetPos"/>
-        /// (sampled at ~chest height) is unobstructed, or is only blocked by a destructible entity
-        /// (e.g. a wall that can be knocked down). Non-destructible terrain and static entities
-        /// cause the method to return false so the AI skips targets sheltered behind solid cover.
+        /// Casts a ray from the muzzle to <paramref name="targetPos"/> (at ~chest height) and
+        /// reports whether a shot can reach the target.
+        ///
+        /// Returns <c>true</c> when the path is clear or when only a destructible entity is in
+        /// the way (the cannon can break it open). In the latter case <paramref name="blockingEntity"/>
+        /// is set to the obstructing entity so callers can decide to aim at it instead.
+        /// Returns <c>false</c> when an indestructible obstacle blocks the path.
         /// </summary>
-        public bool HasLineOfSightToTarget(Vec3 targetPos)
+        public bool TryGetLineOfSightObstacle(Vec3 targetPos, out GameEntity? blockingEntity)
         {
+            blockingEntity = null;
             Vec3 muzzlePos = MissleStartingPositionForSimulation;
             Vec3 aimPoint = targetPos + new Vec3(0f, 0f, 1f); // approximate chest height
             float targetDistance = (aimPoint - muzzlePos).Length;
@@ -143,9 +147,21 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             if (float.IsNaN(collisionDistance) || collisionDistance >= targetDistance - 2f)
                 return true;
 
-            // An obstacle was hit — allow only if it can be destroyed
-            return hitEntity != null && hitEntity.HasScriptOfType<DestructableComponent>();
+            if (hitEntity != null && hitEntity.HasScriptOfType<DestructableComponent>())
+            {
+                blockingEntity = hitEntity;
+                return true;
+            }
+
+            return false;
         }
+
+        /// <summary>
+        /// Returns <c>true</c> when there is a shootable path to <paramref name="targetPos"/>:
+        /// either clear line-of-sight, or only a destructible entity in the way.
+        /// </summary>
+        public bool HasLineOfSightToTarget(Vec3 targetPos)
+            => TryGetLineOfSightObstacle(targetPos, out _);
 
         public Vec3 GetBallisticErrorAppliedDirection(float ballisticErrorAmount)
         {

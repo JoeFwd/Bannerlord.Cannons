@@ -4,6 +4,7 @@ using System.Linq;
 using Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions;
 using Bannerlord.Cannons.BattleMechanics.Artillery;
 using TaleWorlds.Core;
+using TaleWorlds.Engine;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 
@@ -56,37 +57,54 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
         }
 
         /// <summary>
-        /// Evaluates all reachable enemy agents and returns the one at the centre of
-        /// the densest in-range mob, or <c>null</c> if no valid target exists.
+        /// Evaluates all reachable enemy agents and returns the best target:
+        /// <list type="number">
+        ///   <item><description>The densest mob with a clear line of sight.</description></item>
+        ///   <item><description>
+        ///     If every mob is behind a destructible entity, a target aimed at the destructible
+        ///     that shelters the highest-scored cluster — destroying it exposes the agents behind.
+        ///   </description></item>
+        /// </list>
+        /// Returns <c>null</c> if no reachable enemy agents exist.
         /// </summary>
         public Target? FindBestTarget()
         {
-            var candidates = BuildCandidates();
-            return candidates.Count > 0
-                ? TaleWorlds.Core.Extensions.MaxBy(candidates, t => t.UtilityValue)
-                : null;
+            BuildCandidates(out var clearCandidates, out var blockedCandidates);
+
+            if (clearCandidates.Count > 0)
+                return TaleWorlds.Core.Extensions.MaxBy(clearCandidates, t => t.UtilityValue);
+
+            if (blockedCandidates.Count > 0)
+                return BuildDestructableTarget(blockedCandidates);
+
+            return null;
         }
 
         /// <summary>
-        /// For each enemy agent that passes the shootability checks, builds a
-        /// <see cref="Target"/> whose <see cref="Target.MobAgents"/> contains all
-        /// agents within <see cref="MobClusterRadius"/> of it, then scores and
-        /// caps the result.
+        /// For each enemy agent that passes range and direction checks, performs a LOS test
+        /// via <see cref="BaseFieldSiegeWeapon.TryGetLineOfSightObstacle"/>. Agents with a
+        /// clear path land in <paramref name="clearCandidates"/>; agents behind a destructible
+        /// land in <paramref name="blockedCandidates"/> (paired with the blocking entity).
+        /// Agents behind indestructible cover are silently skipped.
         /// </summary>
-        private List<Target> BuildCandidates()
+        private void BuildCandidates(
+            out List<Target> clearCandidates,
+            out List<(Target candidate, GameEntity blocking)> blockedCandidates)
         {
-            var list         = new List<Target>();
-            var enemyAgents  = GetAllEnemyAgents().ToList();
+            clearCandidates   = new List<Target>();
+            blockedCandidates = new List<(Target, GameEntity)>();
+
+            var enemyAgents = GetAllEnemyAgents().ToList();
             if (enemyAgents.Count == 0)
-                return list;
+                return;
 
             foreach (Agent agent in enemyAgents)
             {
                 Vec3 position = agent.Position;
 
-                if (!_weapon.IsTargetInRange(position))                   continue;
-                if (!_weapon.IsTargetWithinDirectionRestriction(position)) continue;
-                if (!_weapon.HasLineOfSightToTarget(position))             continue;
+                if (!_weapon.IsTargetInRange(position))                          continue;
+                if (!_weapon.IsTargetWithinDirectionRestriction(position))       continue;
+                if (!_weapon.TryGetLineOfSightObstacle(position, out GameEntity? blocker)) continue;
 
                 var mobAgents = enemyAgents
                     .Where(a => a.Position.Distance(position) <= MobClusterRadius)
@@ -97,11 +115,28 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
                     _axes.GeometricMean(target),
                     ArtilleryAIConstants.FormationUtilityCap);
 
-                if (target.UtilityValue > 0f)
-                    list.Add(target);
-            }
+                if (target.UtilityValue <= 0f)
+                    continue;
 
-            return list;
+                if (blocker != null)
+                    blockedCandidates.Add((target, blocker));
+                else
+                    clearCandidates.Add(target);
+            }
+        }
+
+        /// <summary>
+        /// Builds a <see cref="Target"/> aimed at the destructible entity that shelters the
+        /// highest-scored mob cluster, so the cannon can break it open and expose the agents.
+        /// </summary>
+        private static Target BuildDestructableTarget(List<(Target candidate, GameEntity blocking)> blocked)
+        {
+            var best   = TaleWorlds.Core.Extensions.MaxBy(blocked, pair => pair.candidate.UtilityValue);
+            GameEntity entity = best.blocking;
+            Vec3 center = (entity.GlobalBoxMax + entity.GlobalBoxMin) * 0.5f;
+            var target  = new Target { BlockingDestructable = entity, SelectedWorldPosition = center };
+            target.UtilityValue = best.candidate.UtilityValue;
+            return target;
         }
 
         private IEnumerable<Agent> GetAllEnemyAgents()

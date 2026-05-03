@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using TaleWorlds.Engine;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 
@@ -39,6 +40,14 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions
         /// <c>null</c> for formation and siege-weapon targets.
         /// </summary>
         public List<Agent>? MobAgents { get; set; }
+
+        /// <summary>
+        /// When non-null, this target represents a destructible entity blocking line-of-sight
+        /// to a mob cluster behind it. The cannon should aim at and break this entity open
+        /// to expose the sheltering agents. Set by <see cref="MobTargetSelector"/> when no
+        /// clear-LOS mob candidates are available.
+        /// </summary>
+        public GameEntity? BlockingDestructable { get; set; }
 
         /// <summary>
         /// Average velocity of all agents in <see cref="MobAgents"/>.
@@ -91,6 +100,9 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions
                 if (entity != null)
                     return (entity.GlobalBoxMax + entity.GlobalBoxMin) * 0.5f;
             }
+
+            if (BlockingDestructable != null)
+                return (BlockingDestructable.GlobalBoxMax + BlockingDestructable.GlobalBoxMin) * 0.5f;
 
             if (base.Agent != null)
                 return base.Agent.CollisionCapsuleCenter;

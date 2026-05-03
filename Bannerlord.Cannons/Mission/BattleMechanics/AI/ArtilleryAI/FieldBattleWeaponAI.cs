@@ -243,6 +243,17 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
                 return;
             }
 
+            // Destructable target: refresh centre each tick; zero out when already destroyed.
+            if (target.BlockingDestructable != null)
+            {
+                DestructableComponent? dc = target.BlockingDestructable
+                    .GetFirstScriptOfType<DestructableComponent>();
+                target.SelectedWorldPosition = (dc != null && !dc.IsDestroyed)
+                    ? (target.BlockingDestructable.GlobalBoxMax + target.BlockingDestructable.GlobalBoxMin) * 0.5f
+                    : Vec3.Zero;
+                return;
+            }
+
             // Mob target: agent is fixed at selection time; apply average mob velocity as lead.
             if (target.MobAgents != null)
             {
