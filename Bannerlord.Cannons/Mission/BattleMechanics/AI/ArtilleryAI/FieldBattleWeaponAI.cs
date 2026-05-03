@@ -44,7 +44,7 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
             if (loggerFactory == null) throw new System.ArgumentNullException(nameof(loggerFactory));
 
             _siegeWeaponSelector = new SiegeWeaponTargetSelector(weapon, loggerFactory);
-            _formationSelector   = new FormationTargetSelector(weapon, loggerFactory);
+            _formationSelector   = new MobTargetSelector(weapon);
             _logger = loggerFactory.CreateLogger<FieldBattleWeaponAI>();
             _findTargetTimer     = new Timer(Mission.Current.CurrentTime, FindTargetInterval);
         }
@@ -239,6 +239,16 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
                 GameEntity entity = target.WeaponEntity.GetTargetEntity();
                 target.SelectedWorldPosition = entity != null
                     ? (entity.GlobalBoxMax + entity.GlobalBoxMin) * 0.5f
+                    : Vec3.Zero;
+                return;
+            }
+
+            // Mob target: agent is fixed at selection time; apply average mob velocity as lead.
+            if (target.MobAgents != null)
+            {
+                Agent? mobAgent = target.Agent;
+                target.SelectedWorldPosition = mobAgent != null && mobAgent.IsActive()
+                    ? mobAgent.Position + target.GetVelocity() * _weapon.GetEstimatedCurrentFlightTime()
                     : Vec3.Zero;
                 return;
             }

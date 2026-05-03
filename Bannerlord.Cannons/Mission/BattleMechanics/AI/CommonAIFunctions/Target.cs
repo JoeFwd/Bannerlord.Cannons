@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 
@@ -31,6 +32,30 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions
         /// Set to <see cref="Vec3.Zero"/> to signal "no valid aim point" and block firing.
         /// </summary>
         public Vec3 SelectedWorldPosition = Vec3.Zero;
+
+        /// <summary>
+        /// Agents within <c>MobClusterRadius</c> of this target's agent. Set by
+        /// <see cref="MobTargetSelector"/> when mob-based targeting is active.
+        /// <c>null</c> for formation and siege-weapon targets.
+        /// </summary>
+        public List<Agent>? MobAgents { get; set; }
+
+        /// <summary>
+        /// Average velocity of all agents in <see cref="MobAgents"/>.
+        /// Returns <see cref="Vec3.Zero"/> when no mob agents are present.
+        /// </summary>
+        public Vec3 MobVelocity
+        {
+            get
+            {
+                if (MobAgents == null || MobAgents.Count == 0)
+                    return Vec3.Zero;
+                var sum = Vec3.Zero;
+                foreach (var a in MobAgents)
+                    sum += a.Velocity;
+                return sum * (1f / MobAgents.Count);
+            }
+        }
 
         /// <summary>A tactical map position associated with this target, if any.</summary>
         public TacticalPosition? TacticalPosition;
@@ -116,9 +141,10 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions
         /// </summary>
         public new Vec3 GetVelocity()
         {
+            if (MobAgents != null && MobAgents.Count > 0)
+                return MobVelocity;
             if (Formation != null)
                 return Formation.QuerySystem.CurrentVelocity.ToVec3();
-
             return base.GetVelocity();
         }
 
@@ -133,6 +159,8 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions
         {
             get
             {
+                if (base.Agent == null && MobAgents != null && MobAgents.Count > 0)
+                    return MobAgents[MobAgents.Count / 2];
                 if (base.Agent == null && Formation != null)
                 {
                     Vec2 referencePos = SelectedWorldPosition == Vec3.Zero

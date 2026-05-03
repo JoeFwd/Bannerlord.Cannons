@@ -115,7 +115,9 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
                 Side,
                 Mission.Current?.IsSiegeBattle ?? false);
 
-            return new FieldBattleWeaponAI(this, _loggerFactory);
+            return Mission.Current.IsSiegeBattle && Side.Equals(BattleSideEnum.Attacker)
+                ? (UsableMachineAIBase) new FieldSiegeWeaponAI(this)
+                : new FieldBattleWeaponAI(this, _loggerFactory);
         }
 
         // --- Init ---
