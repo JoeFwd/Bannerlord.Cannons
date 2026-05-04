@@ -47,7 +47,7 @@ namespace Bannerlord.Cannons.Integration.Mission.Spawn
         private const float DefaultVerticalMaxInDegrees = 45f;
         private const float DefaultHorizontalRangeInDegrees = 100f;
         private const float AirFrictionConstant = 0f;
-        private const float TrajectoryForwardOffset = 1f;
+        private const float TrajectoryForwardOffset = 1.5f;
         private const float SnapshotEpsilon = 0.0001f;
 
         private GameEntity? _trajectoryMeshHolder;
@@ -170,8 +170,7 @@ namespace Bannerlord.Cannons.Integration.Mission.Spawn
             return new Vec3(
                 Vec3.DotProduct(frame.rotation.s, worldOffset),
                 Vec3.DotProduct(frame.rotation.f, worldOffset) + TrajectoryForwardOffset,
-                Vec3.DotProduct(frame.rotation.u, worldOffset),
-                -1f);
+                Vec3.DotProduct(frame.rotation.u, worldOffset));
         }
 
         private static float ToDegrees(float valueInRadians) => valueInRadians * (180f / MathF.PI);
