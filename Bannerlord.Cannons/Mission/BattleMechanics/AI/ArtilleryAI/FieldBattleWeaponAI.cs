@@ -247,7 +247,7 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
             if (target.BlockingDestructable != null)
             {
                 DestructableComponent? dc = target.BlockingDestructable
-                    .GetFirstScriptOfType<DestructableComponent>();
+                    .GetFirstScriptOfTypeInFamily<DestructableComponent>();
                 target.SelectedWorldPosition = (dc != null && !dc.IsDestroyed)
                     ? (target.BlockingDestructable.GlobalBoxMax + target.BlockingDestructable.GlobalBoxMin) * 0.5f
                     : Vec3.Zero;

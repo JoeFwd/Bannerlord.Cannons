@@ -147,7 +147,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             if (float.IsNaN(collisionDistance) || collisionDistance >= targetDistance - 2f)
                 return true;
 
-            if (hitEntity != null && hitEntity.HasScriptOfType<DestructableComponent>())
+            if (hitEntity.GetFirstScriptOfTypeInFamily<DestructableComponent>() != null)
             {
                 blockingEntity = hitEntity;
                 return true;
