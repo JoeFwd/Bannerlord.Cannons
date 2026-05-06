@@ -2,6 +2,8 @@ using Bannerlord.Cannons.BattleMechanics.Artillery;
 using System.Reflection;
 using Harmony.DependencyInjection.Patches;
 using HarmonyLib;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
@@ -59,15 +61,24 @@ namespace Bannerlord.Cannons.Integration.Mission.Battle.Patches
             
             identity.Orthonormalize();
 
-            TaleWorlds.MountAndBlade.Mission.Current.AddCustomMissile(____lastShooterAgent, 
-                new MissionWeapon(missileItem, null, null, 1), 
-                fieldSiegeWeapon.ProjectileEntityCurrentGlobalPosition, 
-                identity.f, 
-                identity, 
-                8f, 
-                fieldSiegeWeapon.ProjectileVelocity, 
-                false, 
-                fieldSiegeWeapon, 
+            float projectileVelocity = fieldSiegeWeapon.ProjectileVelocity;
+            float launchBaseSpeed = projectileVelocity;
+            float launchSpeed = projectileVelocity;
+            WeaponComponentData? currentUsageItem = missileItem.PrimaryWeapon;
+            int missileItemBaseSpeed = currentUsageItem?.MissileSpeed ?? 0;
+            int missileTotalDamage = currentUsageItem?.MissileDamage ?? 0;
+            float speedRatio = launchBaseSpeed > 0f ? launchSpeed / launchBaseSpeed : 0f;
+            float missileMagnitudeBeforeDamageModel = speedRatio * speedRatio * missileTotalDamage;
+
+            TaleWorlds.MountAndBlade.Mission.Current.AddCustomMissile(____lastShooterAgent,
+                new MissionWeapon(missileItem, null, null, 1),
+                fieldSiegeWeapon.ProjectileEntityCurrentGlobalPosition,
+                identity.f,
+                identity,
+                launchBaseSpeed,
+                launchSpeed,
+                false,
+                fieldSiegeWeapon,
                 -1);
 
             return false;
