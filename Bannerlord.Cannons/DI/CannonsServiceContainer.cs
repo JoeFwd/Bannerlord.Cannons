@@ -42,6 +42,7 @@ public class CannonsServiceContainer
         services.AddSingleton<IPatch, MissionSiegeWeaponsControllerPatch>();
         services.AddSingleton<IPatch, MapSiegePOIBrushWidgetManualPatch>();
         services.AddSingleton<IPatch, MapSiegePOIVMPatch>();
+        services.AddSingleton<IPatch, MissionSiegeEngineMarkerWidgetPatch>();
         services.AddSingleton<IPatch, OrderSiegeMachineItemButtonWidgetPatch>();
         services.AddSingleton<IPatch, OrderSiegeMachineVM_GetSiegeTypePatch>();
 
