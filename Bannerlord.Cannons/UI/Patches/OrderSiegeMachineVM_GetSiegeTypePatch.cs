@@ -1,6 +1,5 @@
 using System;
 using System.Reflection;
-using Bannerlord.Cannons.DI;
 using Bannerlord.Cannons.Infrastructure.Registry;
 using Harmony.DependencyInjection.Patches;
 using HarmonyLib;
@@ -12,6 +11,13 @@ namespace Bannerlord.Cannons.Integration.UI.Patches
 {
     public class OrderSiegeMachineVM_GetSiegeTypePatch : IPatch
     {
+        private static ICannonRegistry _registry = null!;
+
+        public OrderSiegeMachineVM_GetSiegeTypePatch(ICannonRegistry registry)
+        {
+            _registry = registry;
+        }
+
         public MethodInfo TargetMethod =>
             AccessTools.Method(typeof(OrderSiegeMachineVM), nameof(OrderSiegeMachineVM.GetSiegeType));
 
@@ -22,7 +28,7 @@ namespace Bannerlord.Cannons.Integration.UI.Patches
 
         private static void Postfix(Type t, BattleSideEnum side, ref SiegeEngineType __result)
         {
-            var cannon = CannonsRuntimeServices.GetRequiredService<ICannonRegistry>().GetCannonByScript(t);
+            var cannon = _registry.GetCannonByScript(t);
             if (cannon != null)
                 __result = MBObjectManager.Instance.GetObject<SiegeEngineType>(cannon.Id);
         }

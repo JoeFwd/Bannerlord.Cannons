@@ -1,9 +1,7 @@
 using System;
 using System.Linq;
 using System.Reflection;
-using Bannerlord.Cannons.DI;
 using Bannerlord.Cannons.Infrastructure.Icons;
-using Bannerlord.Cannons.Infrastructure.Registry;
 using Harmony.DependencyInjection.Patches;
 using HarmonyLib;
 using TaleWorlds.GauntletUI.BaseTypes;
@@ -13,10 +11,12 @@ namespace Bannerlord.Cannons.Integration.UI.Patches
 {
     public class OrderSiegeMachineItemButtonWidgetPatch : IPatch
     {
-        private static readonly Lazy<IDeploymentSiegeEngineIconRepository> _repo =
-            new Lazy<IDeploymentSiegeEngineIconRepository>(() =>
-                new DeploymentSiegeEngineIconRepository(
-                    new CannonIconProvider(CannonsRuntimeServices.GetRequiredService<ICannonRegistry>())));
+        private static IDeploymentSiegeEngineIconRepository _repo = null!;
+
+        public OrderSiegeMachineItemButtonWidgetPatch(IDeploymentSiegeEngineIconRepository repo)
+        {
+            _repo = repo;
+        }
 
         public MethodInfo TargetMethod =>
             typeof(OrderSiegeMachineItemButtonWidget).GetMethod("UpdateMachineIcon", AccessTools.all);
@@ -37,7 +37,7 @@ namespace Bannerlord.Cannons.Integration.UI.Patches
 
             if (machineClass == null || machineIconWidget == null) return;
 
-            var icon = _repo.Value.SiegeEngineIcons
+            var icon = _repo.SiegeEngineIcons
                 .FirstOrDefault(i => i.Name.Equals(machineClass, StringComparison.InvariantCultureIgnoreCase));
             if (icon != null)
             {

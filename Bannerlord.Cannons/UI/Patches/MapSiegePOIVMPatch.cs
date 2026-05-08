@@ -1,9 +1,7 @@
 using System;
 using System.Linq;
 using System.Reflection;
-using Bannerlord.Cannons.DI;
 using Bannerlord.Cannons.Infrastructure.Icons;
-using Bannerlord.Cannons.Infrastructure.Registry;
 using Harmony.DependencyInjection.Patches;
 using HarmonyLib;
 using SandBox.ViewModelCollection.MapSiege;
@@ -12,9 +10,12 @@ namespace Bannerlord.Cannons.Integration.UI.Patches
 {
     public class MapSiegePOIVMPatch : IPatch
     {
-        private static readonly Lazy<IMapSiegeEngineIconRepository> _repo =
-            new Lazy<IMapSiegeEngineIconRepository>(() =>
-                new MapSiegeEngineIconRepository(CannonsRuntimeServices.GetRequiredService<ICannonRegistry>()));
+        private static IMapSiegeEngineIconRepository _repo = null!;
+
+        public MapSiegePOIVMPatch(IMapSiegeEngineIconRepository repo)
+        {
+            _repo = repo;
+        }
 
         public MethodInfo TargetMethod =>
             typeof(MapSiegePOIVM).GetMethod("RefreshMachineType", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -29,7 +30,7 @@ namespace Bannerlord.Cannons.Integration.UI.Patches
             var machine = __instance.Machine;
             if (machine is null) return;
 
-            var machineType = _repo.Value.MapSiegeEngineIcons
+            var machineType = _repo.MapSiegeEngineIcons
                 .FirstOrDefault(icon => icon.CannonId.Equals(machine.SiegeEngine.StringId, StringComparison.InvariantCultureIgnoreCase))
                 ?.MachineType;
 
