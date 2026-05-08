@@ -11,10 +11,14 @@ namespace Bannerlord.Cannons.Integration.UI.Patches
     public class MissionSiegeEngineMarkerWidgetPatch : IPatch
     {
         private static IMapSiegeEngineIconRepository _repo = null!;
+        private static IBannerlordSpriteRepository _spriteRepository = null!;
 
-        public MissionSiegeEngineMarkerWidgetPatch(IMapSiegeEngineIconRepository repo)
+        public MissionSiegeEngineMarkerWidgetPatch(
+            IMapSiegeEngineIconRepository repo,
+            IBannerlordSpriteRepository spriteRepository)
         {
             _repo = repo;
+            _spriteRepository = spriteRepository;
         }
 
         public MethodInfo TargetMethod =>
@@ -29,15 +33,14 @@ namespace Bannerlord.Cannons.Integration.UI.Patches
         {
             // The native SetMachineTypeIcon constructs "SPGeneral\MapSiege\" + machineType and
             // calls base.Context.SpriteData.GetSprite. The mission UI context may not include
-            // our custom sprite category, so fall back to UIResourceManager.SpriteData here.
+            // our custom sprite category, so fall back to the shared Bannerlord sprite data.
             var cannonIcon = _repo.MapSiegeEngineIcons
                 .FirstOrDefault(icon => icon.CannonId.Equals(machineType, StringComparison.InvariantCultureIgnoreCase));
 
             if (cannonIcon is null || __instance.MachineTypeIconWidget is null)
                 return;
 
-            var sprite = TaleWorlds.Engine.GauntletUI.UIResourceManager.SpriteData
-                .GetSprite(cannonIcon.MapSiegeMarkerSpriteId);
+            var sprite = _spriteRepository.GetSprite(cannonIcon.MapSiegeMarkerSpriteId);
 
             if (sprite is null)
                 return;

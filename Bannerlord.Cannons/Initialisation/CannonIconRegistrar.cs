@@ -10,10 +10,15 @@ namespace Bannerlord.Cannons.Initialisation
     {
         private readonly ICannonRegistry _cannonRegistry;
         private readonly ILoggerFactory _loggerFactory;
+        private readonly IBannerlordSpriteRepository _spriteRepository;
 
-        public CannonIconRegistrar(ICannonRegistry cannonRegistry, ILoggerFactory loggerFactory)
+        public CannonIconRegistrar(
+            ICannonRegistry cannonRegistry,
+            IBannerlordSpriteRepository spriteRepository,
+            ILoggerFactory loggerFactory)
         {
             _cannonRegistry = cannonRegistry;
+            _spriteRepository = spriteRepository;
             _loggerFactory = loggerFactory;
         }
 
@@ -21,7 +26,7 @@ namespace Bannerlord.Cannons.Initialisation
         {
             var brushExtender = new BrushStyleExtender(
                 UIResourceManager.BrushFactory,
-                UIResourceManager.SpriteData,
+                _spriteRepository,
                 _loggerFactory);
             var deploymentIconEnricher = new SiegeEngineDeploymentIconEnricher(brushExtender);
             var campaignMapIconEnricher = new CampaignMapSiegeEngineDeploymentIconEnricher(brushExtender);

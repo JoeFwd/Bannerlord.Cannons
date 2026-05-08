@@ -10,6 +10,7 @@ using Harmony.DependencyInjection;
 using Harmony.DependencyInjection.Patches;
 using Bannerlord.Cannons.Integration.Campaign.Patches;
 using Bannerlord.Cannons.Integration.Mission.Battle.Patches;
+using Bannerlord.Cannons.Integration.UI;
 using Bannerlord.Cannons.Integration.UI.Patches;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -32,6 +33,8 @@ public class CannonsServiceContainer
         services.AddCannonsInfrastructure();
         services.AddCannonsApplication();
         services.AddHarmonyPatching();
+
+        services.AddSingleton<IBannerlordSpriteRepository, BannerlordSpriteRepository>();
 
         services.AddSingleton<IPatch, CampaignMapSiegePrefabEntityCacheGetScalePatch>();
         services.AddSingleton<IPatch, CampaignMapSiegePrefabEntityCacheGetLaunchFramePatch>();

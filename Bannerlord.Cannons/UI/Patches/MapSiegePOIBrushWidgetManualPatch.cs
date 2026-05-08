@@ -10,10 +10,14 @@ namespace Bannerlord.Cannons.Integration.UI.Patches
     public class MapSiegePOIBrushWidgetManualPatch : IPatch
     {
         private static IMapSiegeEngineIconRepository _repo = null!;
+        private static IBannerlordSpriteRepository _spriteRepository = null!;
 
-        public MapSiegePOIBrushWidgetManualPatch(IMapSiegeEngineIconRepository repo)
+        public MapSiegePOIBrushWidgetManualPatch(
+            IMapSiegeEngineIconRepository repo,
+            IBannerlordSpriteRepository spriteRepository)
         {
             _repo = repo;
+            _spriteRepository = spriteRepository;
         }
 
         public MethodInfo TargetMethod =>
@@ -30,8 +34,7 @@ namespace Bannerlord.Cannons.Integration.UI.Patches
                 .FirstOrDefault(icon => icon.MachineType == machineType);
             if (cannonIcon is null) return;
 
-            var spriteData = TaleWorlds.Engine.GauntletUI.UIResourceManager.SpriteData;
-            __instance.MachineTypeIconWidget.Sprite = spriteData.GetSprite(cannonIcon.MapSiegeMarkerSpriteId);
+            __instance.MachineTypeIconWidget.Sprite = _spriteRepository.GetSprite(cannonIcon.MapSiegeMarkerSpriteId);
         }
     }
 }

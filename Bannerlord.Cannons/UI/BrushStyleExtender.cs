@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using TaleWorlds.GauntletUI;
-using TaleWorlds.TwoDimension;
 
 namespace Bannerlord.Cannons.Integration.UI
 {
@@ -9,18 +8,18 @@ namespace Bannerlord.Cannons.Integration.UI
     {
         private const string BrushLayerName = "Default";
 
-        private readonly SpriteData _spriteData;
+        private readonly IBannerlordSpriteRepository _spriteRepository;
         private readonly ILogger _logger;
         private readonly BrushFactory _brushFactory;
 
         public BrushStyleExtender(
             BrushFactory brushFactory,
-            SpriteData spriteData,
+            IBannerlordSpriteRepository spriteRepository,
             ILoggerFactory loggerFactory)
         {
             _logger = loggerFactory.CreateLogger<BrushStyleExtender>();
             _brushFactory = brushFactory;
-            _spriteData = spriteData;
+            _spriteRepository = spriteRepository;
         }
 
         public void AddBrushStyle(string siegeEngineName, string fullSpriteName, string brushName)
@@ -33,7 +32,7 @@ namespace Bannerlord.Cannons.Integration.UI
                 return;
             }
 
-            Sprite sprite = _spriteData.GetSprite(fullSpriteName);
+            var sprite = _spriteRepository.GetSprite(fullSpriteName);
 
             if (sprite is null)
             {
