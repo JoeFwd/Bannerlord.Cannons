@@ -1,5 +1,7 @@
+using NetworkMessages.FromServer;
 using Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions;
 using Bannerlord.Cannons.BattleMechanics.Artillery.Components;
+using Bannerlord.Cannons.Domain.Ammo;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
 using TaleWorlds.Library;
@@ -11,7 +13,9 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
     {
         protected IBallisticsService _ballisticsService;
         protected IFireSafetyChecker _fireSafetyChecker;
-        protected IAmmoPointController _ammoPointController;
+        protected AmmoLimit _ammoLimitEnforcer;
+        protected StandingPointWithWeaponRequirement? ActiveAmmoPickupPoint { get; private set; }
+        private readonly ResolveActivePickupPointUseCase _resolveUseCase = new();
 
         public bool PreferHighAngle = false;
         public abstract float ProjectileVelocity { get; }
@@ -40,12 +44,14 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         {
             _ballisticsService = _ballisticsService ?? new BallisticsService();
             _fireSafetyChecker = _fireSafetyChecker ?? new FireSafetyChecker();
-            _ammoPointController = _ammoPointController ?? new AmmoPointController();
+            _ammoLimitEnforcer = _ammoLimitEnforcer ?? new AmmoLimit(OnAmmoConsumed);
         }
 
         private void EnsureComponentsInitialised()
         {
-            if (_ballisticsService == null || _fireSafetyChecker == null || _ammoPointController == null)
+            if (_ballisticsService == null
+                || _fireSafetyChecker == null
+                || _ammoLimitEnforcer == null)
             {
                 InitialiseComponents();
             }
@@ -106,10 +112,121 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             return sideEnum != Side;
         }
 
+        public void ApplyConfiguredStartingAmmo()
+        {
+            EnsureComponentsInitialised();
+            _ammoLimitEnforcer.SyncFromWeapon(AmmoCount);
+
+            if (!IsAmmoMeshReady)
+            {
+                _ammoLimitEnforcer.TrySetAmmo(System.Math.Max(0, startingAmmoCount));
+                AmmoCount = _ammoLimitEnforcer.AmmoCount;
+                return;
+            }
+
+            if (_ammoLimitEnforcer.TrySetAmmo(System.Math.Max(0, startingAmmoCount)))
+                ApplyAmmoStateToWeapon(updateAmmoMesh: true, runAmmoCheck: true, broadcastAmmoCount: false);
+            else
+                CheckAmmo();
+        }
+
         protected void ForceAmmoPointUsage()
         {
             EnsureComponentsInitialised();
-            _ammoPointController.ForceAmmoPointUsage(State, LoadAmmoStandingPoint, AmmoPickUpStandingPoints);
+            if (AmmoPickUpStandingPoints == null || AmmoPickUpStandingPoints.Count == 0)
+            {
+                ActiveAmmoPickupPoint = null;
+                return;
+            }
+
+            var port = new BannerlordAmmoPickupPointPort(
+                LoadAmmoStandingPoint,
+                AmmoPickUpStandingPoints,
+                ReloaderAgent);
+
+            var request = port.CreateResolveRequest(ToAmmoWeaponState(State), _ammoLimitEnforcer.HasAmmo);
+            var result = _resolveUseCase.Execute(request);
+            port.ApplyAvailability(result.ActivationCommands);
+            ActiveAmmoPickupPoint = port.ResolveStandingPoint(result.ActivePointId);
+        }
+
+        protected override bool HasAmmo
+        {
+            get => _ammoLimitEnforcer?.HasAmmo ?? base.HasAmmo;
+            set
+            {
+                if (_ammoLimitEnforcer == null)
+                {
+                    base.HasAmmo = value;
+                    return;
+                }
+
+                _ammoLimitEnforcer.SetHasAmmo(value);
+            }
+        }
+
+        public override void SetAmmo(int ammoLeft)
+        {
+            EnsureComponentsInitialised();
+            if (!_ammoLimitEnforcer.TrySetAmmo(ammoLeft))
+                return;
+
+            ApplyAmmoStateToWeapon(updateAmmoMesh: true, runAmmoCheck: true, broadcastAmmoCount: false);
+        }
+
+        protected override void ConsumeAmmo()
+        {
+            EnsureComponentsInitialised();
+            _ammoLimitEnforcer.TryConsumeAmmo();
+        }
+
+        protected override void CheckAmmo()
+        {
+            EnsureComponentsInitialised();
+            _ammoLimitEnforcer.SyncFromWeapon(AmmoCount);
+
+            if (!_ammoLimitEnforcer.CheckAmmo())
+                return;
+
+            SetForcedUse(value: false);
+
+            if (AmmoPickUpStandingPoints == null)
+                return;
+
+            foreach (var ammoPickUpStandingPoint in AmmoPickUpStandingPoints)
+            {
+                ammoPickUpStandingPoint.IsDeactivated = true;
+            }
+        }
+
+        private bool IsAmmoMeshReady => AmmoPickUpStandingPoints != null && AmmoPickUpStandingPoints.Count > 0;
+
+        private static AmmoWeaponState ToAmmoWeaponState(WeaponState state)
+            => state == WeaponState.LoadingAmmo
+                ? AmmoWeaponState.LoadingAmmo
+                : AmmoWeaponState.Other;
+
+        private void OnAmmoConsumed()
+        {
+            ApplyAmmoStateToWeapon(updateAmmoMesh: true, runAmmoCheck: true, broadcastAmmoCount: true);
+        }
+
+        private void ApplyAmmoStateToWeapon(bool updateAmmoMesh, bool runAmmoCheck, bool broadcastAmmoCount)
+        {
+            AmmoCount = _ammoLimitEnforcer.AmmoCount;
+
+            if (broadcastAmmoCount && GameNetwork.IsServerOrRecorder)
+            {
+                GameNetwork.BeginBroadcastModuleEvent();
+                GameNetwork.WriteMessage(new SetRangedSiegeWeaponAmmo(Id, AmmoCount));
+                GameNetwork.EndBroadcastModuleEvent(GameNetwork.EventBroadcastFlags.AddToMissionRecord);
+            }
+
+            if (updateAmmoMesh && IsAmmoMeshReady)
+                UpdateAmmoMesh();
+
+            if (runAmmoCheck)
+                CheckAmmo();
         }
 
         /// <summary>

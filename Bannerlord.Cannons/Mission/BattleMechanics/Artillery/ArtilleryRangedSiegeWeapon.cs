@@ -41,8 +41,6 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         private ActionIndexCache _loadAmmoBeginAnimationActionIndex;
         private ActionIndexCache _loadAmmoEndAnimationActionIndex;
         private ActionIndexCache _reload2IdleActionIndex;
-        private static readonly ActionIndexCache act_pickup_boulder_begin = ActionIndexCache.Create("act_pickup_boulder_begin");
-        private static readonly ActionIndexCache act_pickup_boulder_end = ActionIndexCache.Create("act_pickup_boulder_end");
         private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger _logger;
 
@@ -142,6 +140,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             PilotStandingPoint.AddComponent(new ClearHandInverseKinematicsOnStopUsageComponent());
             _lastCurrentDirection = currentDirection;
             ApplyAimChange();
+            ApplyConfiguredStartingAmmo();
 
             Mission.Current.OnBeforeAgentRemoved += OnBeforeAgentRemoved;
         }
@@ -199,13 +198,14 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
 
         private void InitialiseOrchestratorComponents()
         {
+            InitialiseComponents();
             _wheelAnimator = new WheelAnimator(_cannonEntities.WheelL, _cannonEntities.WheelR, () => WheelRotationAxis);
             _recoilEffect = new RecoilEffect(_cannonEntities.Body, _wheelAnimator,
                 () => RecoilDuration,
                 () => PushDuration,
                 () => RecoilDistance);
             _fireEffectsPlayer = new FireEffectsPlayer();
-            _ammoPickupHandler = new AmmoPickupHandler();
+            _ammoPickupHandler = new AmmoPickupHandler(_ammoLimitEnforcer);
             _ammoLoadHandler = new AmmoLoadHandler();
             _aiFormationManager = new AIFormationManager(_artilleryCrewProvider);
             _postReloadReadinessPolicy = new FixedDelayPostReloadReadinessPolicy();
@@ -259,9 +259,9 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         {
             CheckNullReloaderOriginalPoint();
             base.OnTick(dt);
+            ForceAmmoPointUsage();
             HandleAmmoPickup();
             HandleAmmoLoad();
-            ForceAmmoPointUsage();
             HandleWaitingTimer(dt);
             UpdateRecoilEffect(dt);
             HandleRecoilReturn(dt);
@@ -326,7 +326,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         {
             Agent reloaderAgent = ReloaderAgent;
             _ammoPickupHandler.Update(
-                AmmoPickUpPoints,
+                ActiveAmmoPickupPoint,
                 LoadAmmoStandingPoint,
                 ReloaderAgentOriginalPoint,
                 ref reloaderAgent,
