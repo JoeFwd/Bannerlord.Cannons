@@ -1,5 +1,10 @@
 <Project>
   <PropertyGroup>
+    <Version>1.0.1</Version>
+    <PackageVersion>$(Version)</PackageVersion>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <IsMinimal>true</IsMinimal>
     <IsMinimal Condition="$(Configuration.Contains('Minimal'))">true</IsMinimal>
   </PropertyGroup>
