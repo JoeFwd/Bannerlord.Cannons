@@ -1,4 +1,8 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.2
+Game Versions: v1.2.12
+* fix(editor): avoid crash when searching prefabs that use the ArtilleryRangedSiegeWeapon script
+---------------------------------------------------------------------------------------------------
 Version: 1.0.1
 Game Versions: v1.2.12
 * fix(nuget): include all non-test Bannerlord.Cannons assemblies in the package so consumers receive the API, module, application, domain, and infrastructure DLLs
