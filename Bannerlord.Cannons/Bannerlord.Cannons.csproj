@@ -27,11 +27,8 @@
     <PackageReference Include="Bannerlord.ReferenceAssemblies.Sandbox" Version="$(GameVersion).*-*" PrivateAssets="All" />
     <PackageReference Include="Bannerlord.ReferenceAssemblies.Native" Version="$(GameVersion).*-*" PrivateAssets="All" />
     <PackageReference Include="IsExternalInit" Version="1.0.3" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
-    <PackageReference Include="Harmony.DependencyInjection" Version="0.2.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.1.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="2.1.0" />
-    <PackageReference Include="System.Reflection.Emit" Version="4.7.0" />
   </ItemGroup>
+  <Import Project="..\build\Bannerlord.Cannons.RuntimeDependencies.targets" />
   <ItemGroup>
     <PackageReference Include="Bannerlord.BuildResources" Version="1.1.0.129" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
   </ItemGroup>

@@ -8,11 +8,13 @@
 		<Platforms>x64</Platforms>
 		<LangVersion>12.0</LangVersion>
 		<Nullable>enable</Nullable>
+		<TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);IncludeProjectReferencesInPackage</TargetsForTfmSpecificBuildOutput>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="IsExternalInit" Version="1.0.3" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
 	</ItemGroup>
+	<Import Project="..\build\Bannerlord.Cannons.RuntimeDependencies.targets" />
 
 	<ItemGroup>
 		<ProjectReference Include="..\Bannerlord.Cannons\Bannerlord.Cannons.csproj" PrivateAssets="all" />
@@ -20,4 +22,14 @@
 		<ProjectReference Include="..\Bannerlord.Cannons.Infrastructure\Bannerlord.Cannons.Infrastructure.csproj" PrivateAssets="all" />
 		<ProjectReference Include="..\Bannerlord.Cannons.Domain\Bannerlord.Cannons.Domain.csproj" PrivateAssets="all" />
 	</ItemGroup>
+
+	<Target Name="IncludeProjectReferencesInPackage" DependsOnTargets="ResolveReferences">
+		<ItemGroup>
+			<_ProjectReferenceAssembly Include="@(ReferenceCopyLocalPaths)"
+									   Condition="'%(ReferenceCopyLocalPaths.ReferenceSourceTarget)' == 'ProjectReference' And '%(ReferenceCopyLocalPaths.Extension)' == '.dll'" />
+			<BuildOutputInPackage Include="@(_ProjectReferenceAssembly->Distinct())">
+				<TargetPath>%(Filename)%(Extension)</TargetPath>
+			</BuildOutputInPackage>
+		</ItemGroup>
+	</Target>
 </Project>
