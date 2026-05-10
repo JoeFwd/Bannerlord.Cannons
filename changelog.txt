@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.1
+Game Versions: v1.2.12
+* fix(nuget): include all non-test Bannerlord.Cannons assemblies in the package so consumers receive the API, module, application, domain, and infrastructure DLLs
+* fix(nuget): declare shared runtime dependencies from the package so consumers restore Harmony.DependencyInjection and Microsoft.Extensions dependencies automatically
+---------------------------------------------------------------------------------------------------
 Version: 1.0.0
 Game Versions: v1.2.12
 * breaking change: remove `CannonSystemInitialiser` and the `.Inject()` initialisation path; client modules must now declare `Bannerlord.Cannons.SubModule` in `SubModule.xml` and let Bannerlord initialise it through the normal submodule lifecycle
