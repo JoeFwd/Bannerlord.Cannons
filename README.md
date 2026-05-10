@@ -2,8 +2,6 @@
 
 Artillery mechanics module for Mount & Blade II: Bannerlord. Provides script components, ballistics, AI, and animation systems for fielding cannon-type siege weapons in both siege and open-battle missions.
 
-**Version:** 1.0.0 | **Supported game versions:** v1.2.12
-
 ---
 
 ## Table of contents
@@ -205,7 +203,7 @@ All fields below are public on `ArtilleryRangedSiegeWeapon` and visible in the s
 Install the `Bannerlord.Cannons` NuGet package from client modules that need to query registered cannons or provide an external logger.
 
 ```xml
-<PackageReference Include="Bannerlord.Cannons" Version="1.0.0" />
+<PackageReference Include="Bannerlord.Cannons" Version="1.0.1" />
 ```
 
 ```csharp
