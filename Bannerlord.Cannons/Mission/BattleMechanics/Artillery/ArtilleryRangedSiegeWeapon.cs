@@ -151,7 +151,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             if (Mission.Current != null)
                 Mission.Current.OnBeforeAgentRemoved -= OnBeforeAgentRemoved;
 
-            foreach (var formation in UserFormations.ToList())
+            foreach (var formation in UserFormations?.ToList() ?? new List<Formation>())
                 formation.StopUsingMachine(this);
         }
 
