@@ -174,7 +174,7 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
             _logger.LogInformation(
                 "Cannon formation target score: Cannon={CannonName}, CannonEntity={CannonEntity}, CannonSide={CannonSide}, FormationIndex={FormationIndex}, UnitCount={UnitCount}, ContainsPlayer={ContainsPlayer}, IsPlayerTroopInFormation={IsPlayerTroopInFormation}, HasPlayerControlledTroop={HasPlayerControlledTroop}, IsPlayerOwner={IsPlayerOwner}, IsMainAgentFormation={IsMainAgentFormation}, Score={Score}.",
                 GetCannonName(),
-                _weapon.GameEntity?.Name ?? string.Empty,
+                (_weapon.GameEntity.IsValid ? _weapon.GameEntity.Name : null) ?? string.Empty,
                 _weapon.Side,
                 formation.Index,
                 formation.CountOfUnits,

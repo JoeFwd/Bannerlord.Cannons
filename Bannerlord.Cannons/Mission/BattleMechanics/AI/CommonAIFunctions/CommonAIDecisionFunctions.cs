@@ -31,11 +31,11 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions
                 if (target.Formation == null)
                     return 0f;
 
-                var closestEnemy = target.Formation.QuerySystem.ClosestEnemyFormation;
+                var closestEnemy = target.Formation.CachedClosestEnemyFormation;
                 if (closestEnemy == null)
                     return float.MaxValue;
 
-                return target.GetPositionPrioritizeCalculated().AsVec2.Distance(closestEnemy.AveragePosition);
+                return target.GetPositionPrioritizeCalculated().AsVec2.Distance(closestEnemy.Formation.CachedAveragePosition);
             };
         }
 

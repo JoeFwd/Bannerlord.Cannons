@@ -33,7 +33,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery.Components
         /// the supplied tag strings.
         /// </summary>
         public static CannonEntities Collect(
-            GameEntity root,
+            WeakGameEntity root,
             string baseTag,
             string barrelTag,
             string leftWheelTag,
@@ -47,9 +47,19 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery.Components
             return new CannonEntities(body, barrel, wheelL, wheelR);
         }
 
-        private static T CollectFirst<T>(GameEntity root, string tag) where T : ScriptComponentBehavior
+        private static T CollectFirst<T>(WeakGameEntity root, string tag) where T : ScriptComponentBehavior
         {
-            return root.CollectObjectsWithTag<T>(tag)[0];
+            var children = new List<WeakGameEntity>();
+            root.GetChildrenRecursive(ref children);
+            foreach (var child in children)
+            {
+                if (!child.IsValid) continue;
+                var entity = TaleWorlds.Engine.GameEntity.CreateFromWeakEntity(child);
+                if (!entity.HasTag(tag)) continue;
+                var script = entity.GetFirstScriptOfType<T>();
+                if (script != null) return script;
+            }
+            return default!;
         }
     }
 }

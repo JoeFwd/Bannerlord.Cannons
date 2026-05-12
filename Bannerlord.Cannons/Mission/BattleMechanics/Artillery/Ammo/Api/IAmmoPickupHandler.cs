@@ -7,7 +7,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery.Components
     public interface IAmmoPickupHandler
     {
         void Update(
-            StandingPointWithWeaponRequirement? activePickupPoint,
+            StandingPoint? activePickupPoint,
             StandingPoint loadAmmoPoint,
             StandingPoint? reloaderOriginalPoint,
             ref Agent? reloaderAgent,

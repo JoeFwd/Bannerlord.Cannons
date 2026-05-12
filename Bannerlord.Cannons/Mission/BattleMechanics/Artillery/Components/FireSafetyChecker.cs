@@ -22,16 +22,17 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery.Components
                 agent = Mission.Current.RayCastForClosestAgent(
                     muzzlePos,
                     muzzlePos + shootingDirection.NormalizedCopy() * 60,
-                    out distanceA,
                     -1,
-                    0.05f);
+                    0.05f,
+                    out distanceA);
 
-                Mission.Current.Scene.RayCastForClosestEntityOrTerrainMT(
+                Mission.Current.Scene.RayCastForClosestEntityOrTerrain(
                     muzzlePos,
                     muzzlePos + shootingDirection.NormalizedCopy() * 25,
                     out distanceE,
-                    out GameEntity _,
-                    0.05f);
+                    out WeakGameEntity _,
+                    0.05f,
+                    BodyFlags.CommonCollisionExcludeFlags);
             }
 
             return !(distanceA < 50 && agent != null && !agent.IsEnemyOf(pilotAgent) || distanceE < 15);

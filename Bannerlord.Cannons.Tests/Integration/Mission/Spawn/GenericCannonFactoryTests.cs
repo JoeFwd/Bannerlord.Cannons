@@ -3,6 +3,7 @@ using Bannerlord.Cannons.Integration.Mission.Spawn;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using TaleWorlds.Engine;
+using TaleWorlds.Localization;
 using Xunit;
 
 namespace Bannerlord.Cannons.Tests.Integration.Mission.Spawn;
@@ -99,9 +100,9 @@ public class GenericCannonFactoryTests
             // Constructor that requires parameters
         }
 
-        public override string GetDescriptionText(GameEntity gameEntity = null)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity = default)
         {
-            return string.Empty;
+            return new TextObject(string.Empty);
         }
     }
 }

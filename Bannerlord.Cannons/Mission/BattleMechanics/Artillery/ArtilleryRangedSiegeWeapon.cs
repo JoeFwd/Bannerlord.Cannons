@@ -109,7 +109,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             _logger.LogInformation(
                 "Creating logged cannon AI for {CannonName}. Entity={CannonEntity}, Side={CannonSide}, IsSiegeBattle={IsSiegeBattle}.",
                 DisplayName,
-                GameEntity?.Name ?? string.Empty,
+                (GameEntity.IsValid ? GameEntity.Name : null) ?? string.Empty,
                 Side,
                 Mission.Current?.IsSiegeBattle ?? false);
 
@@ -134,11 +134,11 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             _fireEffectsPlayer.Initialise(FireSoundID, FireSoundID2, CannonShotExplosionEffect, Scene);
 
             Projectile.SetVisibleSynched(false);
-            timeGapBetweenShootActionAndProjectileLeaving = 0f;
-            timeGapBetweenShootingEndAndReloadingStart = 0f;
+            TimeGapBetweenShootActionAndProjectileLeaving = 0f;
+            TimeGapBetweenShootingEndAndReloadingStart = 0f;
             EnemyRangeToStopUsing = 5f;
             PilotStandingPoint.AddComponent(new ClearHandInverseKinematicsOnStopUsageComponent());
-            _lastCurrentDirection = currentDirection;
+            _lastCurrentDirection = CurrentDirection;
             ApplyAimChange();
             ApplyConfiguredStartingAmmo();
 
@@ -173,9 +173,11 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             if (MissileStartingPositionEntityForSimulation != null)
                 return;
 
-            var childEntities = new List<GameEntity>();
+            var childEntities = new List<WeakGameEntity>();
             GameEntity.GetChildrenRecursive(ref childEntities);
-            MissileStartingPositionEntityForSimulation = childEntities.FirstOrDefault(x => x.Name == "projectile_leaving_position");
+            var match = childEntities.FirstOrDefault(x => x.IsValid && x.Name == "projectile_leaving_position");
+            if (match.IsValid)
+                MissileStartingPositionEntityForSimulation = TaleWorlds.Engine.GameEntity.CreateFromWeakEntity(match);
         }
 
         private void InitialisePostBaseInitContext()
@@ -183,10 +185,10 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             _waitStandingPoint = StandingPoints.FirstOrDefault(sp => sp.GameEntity.HasTag(WaitStandingPointTag));
             _barrelInitialLocalFrame = _cannonEntities.Barrel.GameEntity.GetFrame();
 
-            GameEntity? projectileEntity = Projectile?.GameEntity;
-            if (projectileEntity != null)
+            WeakGameEntity? projectileEntity = Projectile?.GameEntity;
+            if (projectileEntity.HasValue && projectileEntity.Value.IsValid)
             {
-                Vec3 shootingDirection = projectileEntity.GetGlobalFrame().rotation.f;
+                Vec3 shootingDirection = projectileEntity.Value.GetGlobalFrame().rotation.f;
                 Vec3 v = new Vec3(0f, shootingDirection.AsVec2.Length, shootingDirection.Z);
                 _verticalOffsetAngle = Vec3.AngleBetweenTwoVectors(v, Vec3.Forward);
             }
@@ -213,28 +215,28 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
 
         protected override void HandleUserAiming(float dt)
         {
-            float prevTargetDirection = targetDirection;
+            float prevTargetDirection = TargetDirection;
             base.HandleUserAiming(dt);
 
             // Fix for 360° rotation: the engine's ApproachToAngle uses raw subtraction
             // (not angle-aware arithmetic). When TargetDirection crosses the ±π boundary
             // and WrapAngle flips its sign, ApproachToAngle sees a huge raw difference and
             // rotates in the wrong direction (the "bounce"). Fix: when a wrap-around is
-            // detected, shift currentDirection by ±2π so it stays on the same side as
+            // detected, shift CurrentDirection by ±2π so it stays on the same side as
             // TargetDirection. RotateAboutAnArbitraryVector uses cos/sin which are periodic,
             // so the entity rotation is visually identical.
-            float targetJump = targetDirection - prevTargetDirection;
+            float targetJump = TargetDirection - prevTargetDirection;
             if (targetJump < -MathF.PI)
-                currentDirection -= 2f * MathF.PI;
+                CurrentDirection -= 2f * MathF.PI;
             else if (targetJump > MathF.PI)
-                currentDirection += 2f * MathF.PI;
+                CurrentDirection += 2f * MathF.PI;
         }
 
         protected override void ApplyAimChange()
         {
             base.ApplyAimChange();
             MatrixFrame barrelFrame = _barrelInitialLocalFrame;
-            barrelFrame.rotation.RotateAboutSide(currentReleaseAngle + _verticalOffsetAngle);
+            barrelFrame.rotation.RotateAboutSide(CurrentReleaseAngle + _verticalOffsetAngle);
             _cannonEntities.Barrel.GameEntity.SetFrame(ref barrelFrame);
         }
 
@@ -383,7 +385,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         protected override void ApplyCurrentDirectionToEntity()
         {
             base.ApplyCurrentDirectionToEntity();
-            _lastCurrentDirection = currentDirection;
+            _lastCurrentDirection = CurrentDirection;
         }
 
         private void SetActivationWaitingPoint(bool activate)
@@ -446,9 +448,9 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             return textObject;
         }
 
-        public override string GetDescriptionText(GameEntity gameEntity = null)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
         {
-            return new TextObject(DisplayName, null).ToString();
+            return new TextObject(DisplayName, null);
         }
 
         public override SiegeEngineType GetSiegeEngineType() => Side != BattleSideEnum.Attacker ? DefaultSiegeEngineTypes.Catapult : DefaultSiegeEngineTypes.Onager;

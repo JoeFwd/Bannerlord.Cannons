@@ -14,7 +14,8 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         protected IBallisticsService _ballisticsService;
         protected IFireSafetyChecker _fireSafetyChecker;
         protected AmmoLimit _ammoLimitEnforcer;
-        protected StandingPointWithWeaponRequirement? ActiveAmmoPickupPoint { get; private set; }
+        protected StandingPoint? ActiveAmmoPickupPoint { get; private set; }
+        private Vec3 MissleStartingPositionForSimulation => MissileStartingPositionEntityForSimulation?.GlobalPosition ?? Vec3.Zero;
         private readonly ResolveActivePickupPointUseCase _resolveUseCase = new();
 
         public bool PreferHighAngle = false;
@@ -74,7 +75,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         {
             if (Target == null) return 0;
             EnsureComponentsInitialised();
-            return _ballisticsService.GetEstimatedFlightTime(ShootingSpeed, currentReleaseAngle, MissleStartingPositionForSimulation, Target.SelectedWorldPosition);
+            return _ballisticsService.GetEstimatedFlightTime(ShootingSpeed, CurrentReleaseAngle, MissleStartingPositionForSimulation, Target.SelectedWorldPosition);
         }
 
         /// <summary>
@@ -119,12 +120,12 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
 
             if (!IsAmmoMeshReady)
             {
-                _ammoLimitEnforcer.TrySetAmmo(System.Math.Max(0, startingAmmoCount));
+                _ammoLimitEnforcer.TrySetAmmo(System.Math.Max(0, AmmoCount));
                 AmmoCount = _ammoLimitEnforcer.AmmoCount;
                 return;
             }
 
-            if (_ammoLimitEnforcer.TrySetAmmo(System.Math.Max(0, startingAmmoCount)))
+            if (_ammoLimitEnforcer.TrySetAmmo(System.Math.Max(0, AmmoCount)))
                 ApplyAmmoStateToWeapon(updateAmmoMesh: true, runAmmoCheck: true, broadcastAmmoCount: false);
             else
                 CheckAmmo();
@@ -133,7 +134,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         protected void ForceAmmoPointUsage()
         {
             EnsureComponentsInitialised();
-            if (AmmoPickUpStandingPoints == null || AmmoPickUpStandingPoints.Count == 0)
+            if (AmmoPickUpPoints == null || AmmoPickUpPoints.Count == 0)
             {
                 ActiveAmmoPickupPoint = null;
                 return;
@@ -141,7 +142,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
 
             var port = new BannerlordAmmoPickupPointPort(
                 LoadAmmoStandingPoint,
-                AmmoPickUpStandingPoints,
+                AmmoPickUpPoints,
                 ReloaderAgent);
 
             var request = port.CreateResolveRequest(ToAmmoWeaponState(State), _ammoLimitEnforcer.HasAmmo);
@@ -190,16 +191,16 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
 
             SetForcedUse(value: false);
 
-            if (AmmoPickUpStandingPoints == null)
+            if (AmmoPickUpPoints == null)
                 return;
 
-            foreach (var ammoPickUpStandingPoint in AmmoPickUpStandingPoints)
+            foreach (var ammoPickUpStandingPoint in AmmoPickUpPoints)
             {
                 ammoPickUpStandingPoint.IsDeactivated = true;
             }
         }
 
-        private bool IsAmmoMeshReady => AmmoPickUpStandingPoints != null && AmmoPickUpStandingPoints.Count > 0;
+        private bool IsAmmoMeshReady => AmmoPickUpPoints != null && AmmoPickUpPoints.Count > 0;
 
         private static AmmoWeaponState ToAmmoWeaponState(WeaponState state)
             => state == WeaponState.LoadingAmmo
@@ -248,10 +249,10 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
                 return true;
 
             float collisionDistance;
-            GameEntity hitEntity;
+            WeakGameEntity hitEntity;
             using (new TWSharedMutexReadLock(Scene.PhysicsAndRayCastLock))
             {
-                Scene.RayCastForClosestEntityOrTerrainMT(
+                Scene.RayCastForClosestEntityOrTerrain(
                     muzzlePos,
                     aimPoint,
                     out collisionDistance,
@@ -264,10 +265,9 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             if (float.IsNaN(collisionDistance) || collisionDistance >= targetDistance - 2f)
                 return true;
 
-            // hitEntity can be null
-            if (hitEntity?.GetFirstScriptOfTypeInFamily<DestructableComponent>() != null)
+            if (hitEntity.IsValid && hitEntity.GetFirstScriptOfTypeInFamily<DestructableComponent>() != null)
             {
-                blockingEntity = hitEntity;
+                blockingEntity = TaleWorlds.Engine.GameEntity.CreateFromWeakEntity(hitEntity);
                 return true;
             }
 
@@ -293,7 +293,9 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             Vec2 aimDirection = ShootingDirection.AsVec2;
             if (aimDirection.LengthSquared < 0.0001f)
             {
-                aimDirection = (RotationObject?.GameEntity?.GetGlobalFrame().rotation.f ?? GameEntity.GetGlobalFrame().rotation.f).AsVec2;
+                aimDirection = (RotationObject != null && RotationObject.GameEntity.IsValid
+                    ? RotationObject.GameEntity.GetGlobalFrame().rotation.f
+                    : GameEntity.GetGlobalFrame().rotation.f).AsVec2;
             }
 
             if (aimDirection.LengthSquared < 0.0001f)
@@ -328,8 +330,8 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
                 return false;
 
             GiveExactInput(localTargetDirection, localTargetAngle);
-            return MathF.Abs(currentDirection - localTargetDirection) < 0.001f
-                   && MathF.Abs(currentReleaseAngle - localTargetAngle) < 0.001f;
+            return MathF.Abs(CurrentDirection - localTargetDirection) < 0.001f
+                   && MathF.Abs(CurrentReleaseAngle - localTargetAngle) < 0.001f;
         }
 
         public bool CanShootAtPointUsingAimFrame(Vec3 target)

@@ -28,7 +28,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery.Components
 
                 if (user.GetCurrentAction(1) == loadAmmoEndAction)
                 {
-                    EquipmentIndex wieldedItemIndex = user.GetWieldedItemIndex(Agent.HandIndex.MainHand);
+                    EquipmentIndex wieldedItemIndex = user.GetPrimaryWieldedItemIndex();
                     if (wieldedItemIndex != EquipmentIndex.None &&
                         user.Equipment[wieldedItemIndex].CurrentUsageItem.WeaponClass ==
                         originalMissileItem.PrimaryWeapon.WeaponClass)

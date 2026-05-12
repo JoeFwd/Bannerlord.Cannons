@@ -119,7 +119,7 @@ namespace Bannerlord.Cannons.Integration.Mission.Spawn
             snapshot = default;
 
             var spawner = FindSpawnerInParents();
-            if (spawner?.GameEntity == null || GameEntity == null) return false;
+            if (spawner == null || !spawner.GameEntity.IsValid || !GameEntity.IsValid) return false;
             if (spawner is not ICannonTrajectoryPreviewSource trajectorySource) return false;
 
             var projectileLeavingPosition = FindProjectileLeavingPosition(spawner.GameEntity);
@@ -157,11 +157,14 @@ namespace Bannerlord.Cannons.Integration.Mission.Spawn
             return null;
         }
 
-        private static GameEntity? FindProjectileLeavingPosition(GameEntity root)
+        private static WeakGameEntity? FindProjectileLeavingPosition(WeakGameEntity root)
         {
-            var children = new List<GameEntity>();
+            var children = new List<WeakGameEntity>();
             root.GetChildrenRecursive(ref children);
-            return children.FirstOrDefault(e => e != null && e.Name == "projectile_leaving_position");
+            foreach (var child in children)
+                if (child.IsValid && child.Name == "projectile_leaving_position")
+                    return child;
+            return null;
         }
 
         private static Vec3 ToLocalOffset(MatrixFrame frame, Vec3 worldTarget)
@@ -191,7 +194,7 @@ namespace Bannerlord.Cannons.Integration.Mission.Spawn
 
         private void RebuildOrToggleTrajectoryMesh()
         {
-            if (!ShowTrajectory || !_trajectoryParams.IsValid || GameEntity == null || GameEntity.IsGhostObject())
+            if (!ShowTrajectory || !_trajectoryParams.IsValid || !GameEntity.IsValid || GameEntity.IsGhostObject())
             {
                 _trajectoryMeshHolder?.SetVisibilityExcludeParents(ShowTrajectory);
                 return;
@@ -199,11 +202,11 @@ namespace Bannerlord.Cannons.Integration.Mission.Spawn
 
             if (_trajectoryMeshHolder == null)
             {
-                _trajectoryMeshHolder = GameEntity.CreateEmpty(Scene, isModifiableFromEditor: false);
+                _trajectoryMeshHolder = TaleWorlds.Engine.GameEntity.CreateEmpty(Scene, isModifiableFromEditor: false);
                 if (_trajectoryMeshHolder == null) return;
 
                 _trajectoryMeshHolder.EntityFlags |= EntityFlags.DontSaveToScene;
-                GameEntity.AddChild(_trajectoryMeshHolder, autoLocalizeFrame: true);
+                TaleWorlds.Engine.GameEntity.CreateFromWeakEntity(GameEntity).AddChild(_trajectoryMeshHolder, autoLocalizeFrame: true);
             }
 
             var frame = GameEntity.GetGlobalFrame();

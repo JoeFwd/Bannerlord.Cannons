@@ -94,10 +94,10 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions
         /// </summary>
         public Vec3 GetPosition()
         {
-            if (WeaponEntity != null)
+            if (TargetableObject != null)
             {
-                var entity = WeaponEntity.GetTargetEntity();
-                if (entity != null)
+                var entity = TargetableObject.GetTargetEntity();
+                if (entity.IsValid)
                     return (entity.GlobalBoxMax + entity.GlobalBoxMin) * 0.5f;
             }
 
@@ -123,8 +123,7 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions
             if (TacticalPosition != null)
                 return TacticalPosition.Position.GetGroundVec3MT();
 
-            var basePos = base.Position;
-            return basePos;
+            return Vec3.Invalid;
         }
 
         /// <summary>
@@ -142,8 +141,7 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions
             if (TacticalPosition != null)
                 return TacticalPosition.Position.GetGroundVec3MT();
 
-            var basePos = base.Position;
-            return basePos;
+            return Vec3.Invalid;
         }
 
         /// <summary>
@@ -151,13 +149,13 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions
         /// formation's current movement velocity (used for lead calculation). Falls back
         /// to the base <see cref="Threat.GetVelocity"/> for agent/weapon targets.
         /// </summary>
-        public new Vec3 GetVelocity()
+        public Vec3 GetVelocity()
         {
             if (MobAgents != null && MobAgents.Count > 0)
                 return MobVelocity;
             if (Formation != null)
-                return Formation.QuerySystem.CurrentVelocity.ToVec3();
-            return base.GetVelocity();
+                return Formation.CachedCurrentVelocity.ToVec3();
+            return base.GetGlobalVelocity();
         }
 
         /// <summary>
@@ -186,6 +184,6 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions
         }
 
         /// <summary>Resolves the target position via <see cref="GetPosition"/>.</summary>
-        public new Vec3 Position => GetPosition();
+        public Vec3 Position => GetPosition();
     }
 }

@@ -49,8 +49,8 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
 
             foreach (SiegeWeapon siegeWeapon in GetEnemySiegeWeapons())
             {
-                GameEntity? entity = siegeWeapon.GetTargetEntity();
-                if (entity == null) continue;
+                WeakGameEntity entity = siegeWeapon.GetTargetEntity();
+                if (!entity.IsValid) continue;
 
                 Vec3 position = (entity.GlobalBoxMax + entity.GlobalBoxMin) * 0.5f;
 
@@ -65,7 +65,7 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
                 if (score > bestScore)
                 {
                     bestScore = score;
-                    best = new Target { WeaponEntity = siegeWeapon, SelectedWorldPosition = position };
+                    best = new Target { TargetableObject = siegeWeapon, SelectedWorldPosition = position };
                     best.UtilityValue = score;
                 }
             }
@@ -73,7 +73,7 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
             return best;
         }
 
-        private void LogSiegeWeaponScore(SiegeWeapon siegeWeapon, GameEntity entity, float distance, float score)
+        private void LogSiegeWeaponScore(SiegeWeapon siegeWeapon, WeakGameEntity entity, float distance, float score)
         {
             if (score <= 0f)
                 return;
@@ -81,7 +81,7 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
             _logger.LogInformation(
                 "Cannon siege-weapon target score: Cannon={CannonName}, CannonEntity={CannonEntity}, CannonSide={CannonSide}, SiegeWeaponType={SiegeWeaponType}, SiegeTargetEntity={SiegeTargetEntity}, SiegeTargetSide={SiegeTargetSide}, Distance={Distance}, Score={Score}.",
                 GetCannonName(),
-                _weapon.GameEntity?.Name ?? string.Empty,
+                (_weapon.GameEntity.IsValid ? _weapon.GameEntity.Name : null) ?? string.Empty,
                 _weapon.Side,
                 siegeWeapon.GetType().Name,
                 entity.Name,

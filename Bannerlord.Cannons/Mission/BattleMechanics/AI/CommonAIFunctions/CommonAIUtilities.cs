@@ -49,7 +49,7 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions
             float distanceToObstacle;
             using (new TWSharedMutexReadLock(Scene.PhysicsAndRayCastLock))
             {
-                Mission.Current.Scene.RayCastForClosestEntityOrTerrainMT(from, to, out distanceToObstacle, out GameEntity _);
+                Mission.Current.Scene.RayCastForClosestEntityOrTerrain(from, to, out distanceToObstacle, out WeakGameEntity _, 0f, BodyFlags.CommonCollisionExcludeFlags);
             }
             return distanceToObstacle > minDistance;
         }

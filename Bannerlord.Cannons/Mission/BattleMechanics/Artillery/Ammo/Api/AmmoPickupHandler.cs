@@ -27,7 +27,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery.Components
         }
 
         public void Update(
-            StandingPointWithWeaponRequirement? activePickupPoint,
+            StandingPoint? activePickupPoint,
             StandingPoint loadAmmoPoint,
             StandingPoint? reloaderOriginalPoint,
             ref Agent? reloaderAgent,
@@ -102,7 +102,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery.Components
             agent.OnAgentWieldedItemChange -= _onCarriedProjectileDroppedCache[agent.Index];
             _onCarriedProjectileDroppedCache.Remove(agent.Index);
 
-            if (agent.GetCurrentAction(1)?.Index != loadAmmoEndAction.Index)
+            if (agent.GetCurrentAction(1) != loadAmmoEndAction)
                 agent.StopUsingGameObject();
         }
     }

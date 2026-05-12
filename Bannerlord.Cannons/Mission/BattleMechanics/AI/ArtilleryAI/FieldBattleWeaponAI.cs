@@ -169,13 +169,13 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
             _logger.LogInformation(
                 "Cannon selected target: Cannon={CannonName}, CannonEntity={CannonEntity}, CannonSide={CannonSide}, TargetKind={TargetKind}, FormationIndex={FormationIndex}, UnitCount={UnitCount}, ContainsPlayer={ContainsPlayer}, SiegeTargetEntity={SiegeTargetEntity}, Score={Score}.",
                 GetCannonName(),
-                _weapon.GameEntity?.Name ?? string.Empty,
+                (_weapon.GameEntity.IsValid ? _weapon.GameEntity.Name : null) ?? string.Empty,
                 _weapon.Side,
                 targetKind,
                 target.Formation?.Index,
                 target.Formation?.CountOfUnits,
                 target.Formation != null && FormationTargetSelector.ShouldFilterOutPlayerFormation(target.Formation),
-                target.WeaponEntity?.GetTargetEntity()?.Name ?? string.Empty,
+                GetTargetEntityName(target.TargetableObject),
                 target.UtilityValue);
         }
 
@@ -184,14 +184,14 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
             _logger.LogInformation(
                 "Cannon rejected selected target: Cannon={CannonName}, CannonEntity={CannonEntity}, CannonSide={CannonSide}, TargetKind={TargetKind}, Reason={Reason}, FormationIndex={FormationIndex}, UnitCount={UnitCount}, ContainsPlayer={ContainsPlayer}, SiegeTargetEntity={SiegeTargetEntity}, AimPoint={AimPoint}, Score={Score}.",
                 GetCannonName(),
-                _weapon.GameEntity?.Name ?? string.Empty,
+                (_weapon.GameEntity.IsValid ? _weapon.GameEntity.Name : null) ?? string.Empty,
                 _weapon.Side,
                 targetKind,
                 reason,
                 target.Formation?.Index,
                 target.Formation?.CountOfUnits,
                 target.Formation != null && FormationTargetSelector.ShouldFilterOutPlayerFormation(target.Formation),
-                target.WeaponEntity?.GetTargetEntity()?.Name ?? string.Empty,
+                GetTargetEntityName(target.TargetableObject),
                 target.SelectedWorldPosition,
                 target.UtilityValue);
         }
@@ -201,13 +201,13 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
             _logger.LogInformation(
                 "Cannon rejected held target: Cannon={CannonName}, CannonEntity={CannonEntity}, CannonSide={CannonSide}, Reason={Reason}, FormationIndex={FormationIndex}, UnitCount={UnitCount}, ContainsPlayer={ContainsPlayer}, SiegeTargetEntity={SiegeTargetEntity}, AimPoint={AimPoint}, Score={Score}.",
                 GetCannonName(),
-                _weapon.GameEntity?.Name ?? string.Empty,
+                (_weapon.GameEntity.IsValid ? _weapon.GameEntity.Name : null) ?? string.Empty,
                 _weapon.Side,
                 reason,
                 target.Formation?.Index,
                 target.Formation?.CountOfUnits,
                 target.Formation != null && FormationTargetSelector.ShouldFilterOutPlayerFormation(target.Formation),
-                target.WeaponEntity?.GetTargetEntity()?.Name ?? string.Empty,
+                GetTargetEntityName(target.TargetableObject),
                 aimPoint,
                 target.UtilityValue);
         }
@@ -216,6 +216,13 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
             => _weapon is ArtilleryRangedSiegeWeapon artillery
                 ? artillery.DisplayName
                 : _weapon.GetType().Name;
+
+        private static string GetTargetEntityName(ITargetable? targetable)
+        {
+            if (targetable == null) return string.Empty;
+            var entity = targetable.GetTargetEntity();
+            return entity.IsValid ? entity.Name : string.Empty;
+        }
 
         /// <summary>
         /// Updates <paramref name="target"/>'s <c>SelectedWorldPosition</c> to the
@@ -234,10 +241,10 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
         /// </summary>
         private void UpdateLeadPosition(Target target)
         {
-            if (target.WeaponEntity != null)
+            if (target.TargetableObject != null)
             {
-                GameEntity entity = target.WeaponEntity.GetTargetEntity();
-                target.SelectedWorldPosition = entity != null
+                WeakGameEntity entity = target.TargetableObject.GetTargetEntity();
+                target.SelectedWorldPosition = entity.IsValid
                     ? (entity.GlobalBoxMax + entity.GlobalBoxMin) * 0.5f
                     : Vec3.Zero;
                 return;

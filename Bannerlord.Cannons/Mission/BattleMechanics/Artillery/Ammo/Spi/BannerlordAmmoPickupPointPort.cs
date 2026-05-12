@@ -7,12 +7,12 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery.Components
     internal sealed class BannerlordAmmoPickupPointPort : IAmmoPickupPointPort
     {
         private readonly StandingPoint _loadAmmoPoint;
-        private readonly IReadOnlyList<StandingPointWithWeaponRequirement> _pickupPoints;
+        private readonly IReadOnlyList<StandingPoint> _pickupPoints;
         private readonly Agent? _reloaderAgent;
 
         public BannerlordAmmoPickupPointPort(
             StandingPoint loadAmmoPoint,
-            IReadOnlyList<StandingPointWithWeaponRequirement> pickupPoints,
+            IReadOnlyList<StandingPoint> pickupPoints,
             Agent? reloaderAgent)
         {
             _loadAmmoPoint = loadAmmoPoint;
@@ -62,7 +62,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery.Components
             }
         }
 
-        public StandingPointWithWeaponRequirement? ResolveStandingPoint(int? pointId)
+        public StandingPoint? ResolveStandingPoint(int? pointId)
         {
             if (!pointId.HasValue)
                 return null;
