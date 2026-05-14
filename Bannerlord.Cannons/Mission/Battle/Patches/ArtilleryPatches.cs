@@ -29,14 +29,14 @@ namespace Bannerlord.Cannons.Integration.Mission.Battle.Patches
 
         public PatchType PatchType => PatchType.Prefix;
 
-        private static bool Prefix(RangedSiegeWeapon __instance, ItemObject missileItem, Agent ____lastShooterAgent)
+        private static bool Prefix(RangedSiegeWeapon __instance, ItemObject missileItem, Agent ___LastShooterAgent)
         {
-            if (__instance is not BaseFieldSiegeWeapon fieldSiegeWeapon || ____lastShooterAgent is null)
+            if (__instance is not BaseFieldSiegeWeapon fieldSiegeWeapon || ___LastShooterAgent is null)
                 return true;
 
             Mat3 identity = Mat3.Identity;
             
-            if (!____lastShooterAgent.IsAIControlled)
+            if (!___LastShooterAgent.IsAIControlled)
             {
                 identity.f = ArtilleryPatchHelpers.GetPlayerControlledLaunchDirection(fieldSiegeWeapon);
             }
@@ -70,7 +70,7 @@ namespace Bannerlord.Cannons.Integration.Mission.Battle.Patches
             float speedRatio = launchBaseSpeed > 0f ? launchSpeed / launchBaseSpeed : 0f;
             float missileMagnitudeBeforeDamageModel = speedRatio * speedRatio * missileTotalDamage;
 
-            TaleWorlds.MountAndBlade.Mission.Current.AddCustomMissile(____lastShooterAgent,
+            TaleWorlds.MountAndBlade.Mission.Current.AddCustomMissile(___LastShooterAgent,
                 new MissionWeapon(missileItem, null, null, 1),
                 fieldSiegeWeapon.ProjectileEntityCurrentGlobalPosition,
                 identity.f,
