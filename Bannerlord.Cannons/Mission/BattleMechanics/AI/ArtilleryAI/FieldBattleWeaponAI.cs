@@ -88,9 +88,9 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
             if (aimPoint == Vec3.Zero)
                 return;
 
-            if (!_weapon.IsTargetWithinDirectionRestriction(aimPoint))
+            if (!_weapon.CanShootAtPoint(aimPoint))
             {
-                LogRejectedHeldTarget(_weapon.Target, "OutsideDirectionRestriction", aimPoint);
+                LogRejectedHeldTarget(_weapon.Target, "CannotShootAtPoint", aimPoint);
                 _target = null;
                 return;
             }
@@ -109,17 +109,9 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
             }
         }
 
-        /// <summary>
-        /// Returns <c>true</c> when the weapon is aimed and ready to fire at
-        /// <paramref name="aimPoint"/>: the aim point is valid, the weapon has rotated
-        /// to face the target, and the target is within range.
-        ///
-        /// Note: calling <see cref="BaseFieldSiegeWeapon.AimAtThreat"/> also updates
-        /// the weapon's rotation as a side effect.
-        /// </summary>
         private bool ReadyToFire(Vec3 aimPoint)
             => aimPoint != Vec3.Zero
-               && _weapon.AimAtThreat(_weapon.Target)
+               && _weapon.AimAtTargetWorldUp(aimPoint)
                && _weapon.IsTargetInRange(aimPoint);
 
         /// <summary>
@@ -154,9 +146,9 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
                 return;
             }
 
-            if (!_weapon.IsTargetWithinDirectionRestriction(target.SelectedWorldPosition))
+            if (!_weapon.CanShootAtPoint(target.SelectedWorldPosition))
             {
-                LogRejectedSelectedTarget(target, targetKind, "OutsideDirectionRestriction");
+                LogRejectedSelectedTarget(target, targetKind, "CannotShootAtPoint");
                 return;
             }
 

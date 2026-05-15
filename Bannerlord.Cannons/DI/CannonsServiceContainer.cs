@@ -40,7 +40,6 @@ public class CannonsServiceContainer
         services.AddSingleton<IPatch, CampaignMapSiegePrefabEntityCacheGetLaunchFramePatch>();
         services.AddSingleton<IPatch, CampaignMapSiegePrefabEntityCacheOnInitPatch>();
         services.AddSingleton<IPatch, ArtilleryShootProjectileAuxPatch>();
-        services.AddSingleton<IPatch, ArtilleryCanShootAtPointPatch>();
         services.AddSingleton<IPatch, ArtilleryGetAirFrictionConstantPatch>();
         services.AddSingleton<IPatch, MissionSiegeWeaponsControllerPatch>();
         services.AddSingleton<IPatch, MapSiegePOIBrushWidgetManualPatch>();

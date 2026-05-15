@@ -2,8 +2,6 @@ using Bannerlord.Cannons.BattleMechanics.Artillery;
 using System.Reflection;
 using Harmony.DependencyInjection.Patches;
 using HarmonyLib;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
@@ -81,26 +79,6 @@ namespace Bannerlord.Cannons.Integration.Mission.Battle.Patches
                 fieldSiegeWeapon,
                 -1);
 
-            return false;
-        }
-    }
-
-    public class ArtilleryCanShootAtPointPatch : IPatch
-    {
-        public MethodInfo TargetMethod =>
-            AccessTools.Method(typeof(RangedSiegeWeapon), "CanShootAtPoint");
-
-        public MethodInfo PatchMethod =>
-            AccessTools.Method(typeof(ArtilleryCanShootAtPointPatch), nameof(Prefix));
-
-        public PatchType PatchType => PatchType.Prefix;
-
-        private static bool Prefix(RangedSiegeWeapon __instance, Vec3 target, ref bool __result)
-        {
-            if (__instance is not BaseFieldSiegeWeapon fieldSiegeWeapon)
-                return true;
-
-            __result = fieldSiegeWeapon.CanShootAtPointUsingAimFrame(target);
             return false;
         }
     }
