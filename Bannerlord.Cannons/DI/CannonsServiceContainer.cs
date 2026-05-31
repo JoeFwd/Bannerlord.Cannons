@@ -47,6 +47,7 @@ public class CannonsServiceContainer
         services.AddSingleton<IPatch, MissionSiegeEngineMarkerWidgetPatch>();
         services.AddSingleton<IPatch, OrderSiegeMachineItemButtonWidgetPatch>();
         services.AddSingleton<IPatch, OrderSiegeMachineVM_GetSiegeTypePatch>();
+        services.AddSingleton<IPatch, ArtilleryMerlonPassThroughPatch>();
 
         services.AddSingleton<ValidateCannonsUseCase>();
         services.AddSingleton<CannonRegistryBootstrapper>();
