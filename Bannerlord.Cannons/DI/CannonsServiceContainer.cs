@@ -2,10 +2,8 @@ using Bannerlord.Cannons.Domain;
 using Bannerlord.Cannons.Initialisation;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Linq;
 using Bannerlord.Cannons.Application.DependencyInjection;
 using Bannerlord.Cannons.Infrastructure.DependencyInjection;
-using System.Reflection;
 using Harmony.DependencyInjection;
 using Harmony.DependencyInjection.Patches;
 using Bannerlord.Cannons.Integration.Campaign.Patches;
@@ -47,7 +45,6 @@ public class CannonsServiceContainer
         services.AddSingleton<IPatch, MissionSiegeEngineMarkerWidgetPatch>();
         services.AddSingleton<IPatch, OrderSiegeMachineItemButtonWidgetPatch>();
         services.AddSingleton<IPatch, OrderSiegeMachineVM_GetSiegeTypePatch>();
-        services.AddSingleton<IPatch, ArtilleryMerlonPassThroughPatch>();
 
         services.AddSingleton<ValidateCannonsUseCase>();
         services.AddSingleton<CannonRegistryBootstrapper>();
