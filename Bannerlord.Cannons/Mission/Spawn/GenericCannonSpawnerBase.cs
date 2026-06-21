@@ -1,6 +1,9 @@
 using System.Reflection;
+using Bannerlord.Cannons.DI;
+using Microsoft.Extensions.Logging;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
+using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 using TaleWorlds.MountAndBlade.Objects.Siege;
 
@@ -16,10 +19,58 @@ namespace Bannerlord.Cannons.Integration.Mission.Spawn
         [EditorVisibleScriptComponentVariable(true)]
         public string SiegeEngineId = "";
 
+        [SpawnerPermissionField]
+        public MatrixFrame projectile_pile = MatrixFrame.Zero;
+
+        [EditorVisibleScriptComponentVariable(true)]
+        public string AddOnDeployTag = "";
+
+        [EditorVisibleScriptComponentVariable(true)]
+        public string RemoveOnDeployTag = "";
+
+        [EditorVisibleScriptComponentVariable(true)]
+        public bool ammo_pos_a_enabled = true;
+
+        [EditorVisibleScriptComponentVariable(true)]
+        public bool ammo_pos_b_enabled = true;
+
+        [EditorVisibleScriptComponentVariable(true)]
+        public bool ammo_pos_c_enabled = true;
+
+        [EditorVisibleScriptComponentVariable(true)]
+        public bool ammo_pos_d_enabled = true;
+
+        [EditorVisibleScriptComponentVariable(true)]
+        public bool ammo_pos_e_enabled = true;
+
+        [EditorVisibleScriptComponentVariable(true)]
+        public bool ammo_pos_f_enabled = true;
+
+        [EditorVisibleScriptComponentVariable(true)]
+        public bool ammo_pos_g_enabled = true;
+
+        [EditorVisibleScriptComponentVariable(true)]
+        public bool ammo_pos_h_enabled = true;
+
+        protected override void OnEditorInit()
+        {
+            base.OnEditorInit();
+            _spawnerEditorHelper = new SpawnerEntityEditorHelper(this);
+        }
+
+        protected override void OnEditorTick(float dt)
+        {
+            base.OnEditorTick(dt);
+            _spawnerEditorHelper?.Tick(dt);
+        }
+        
         protected override void OnPreInit()
         {
             base.OnPreInit();
-            _spawnerMissionHelper = new SpawnerEntityMissionHelper(this);
+            var logger = CannonsRuntimeServices
+                .GetRequiredService<ILoggerFactory>()
+                .CreateLogger(nameof(CannonSpawnerEntityMissionHelper));
+            _spawnerMissionHelper = CannonSpawnerEntityMissionHelper.Create(this, logger);
         }
 
         public override void AssignParameters(SpawnerEntityMissionHelper spawnerMissionHelper)
@@ -34,7 +85,7 @@ namespace Bannerlord.Cannons.Integration.Mission.Spawn
             var cannonType = cannon.GetType();
             foreach (var field in GetType().GetFields(BindingFlags.Public | BindingFlags.Instance))
             {
-                if (field.Name == nameof(Team)) continue;
+                if (field.Name == nameof(Team) || field.Name.Equals(nameof(projectile_pile))) continue;
                 var cannonField = cannonType.GetField(field.Name, BindingFlags.Public | BindingFlags.Instance);
                 cannonField?.SetValue(cannon, field.GetValue(this));
             }
