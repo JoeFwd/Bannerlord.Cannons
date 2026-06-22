@@ -51,6 +51,18 @@ namespace Bannerlord.Cannons.Integration.Mission.Spawn
 
         [EditorVisibleScriptComponentVariable(true)]
         public bool ammo_pos_h_enabled = true;
+
+        protected override void OnEditorInit()
+        {
+            base.OnEditorInit();
+            _spawnerEditorHelper = new SpawnerEntityEditorHelper(this);
+        }
+
+        protected override void OnEditorTick(float dt)
+        {
+            base.OnEditorTick(dt);
+            _spawnerEditorHelper?.Tick(dt);
+        }
         
         protected override void OnPreInit()
         {
@@ -73,7 +85,7 @@ namespace Bannerlord.Cannons.Integration.Mission.Spawn
             var cannonType = cannon.GetType();
             foreach (var field in GetType().GetFields(BindingFlags.Public | BindingFlags.Instance))
             {
-                if (field.Name == nameof(Team)) continue;
+                if (field.Name == nameof(Team) || field.Name.Equals(nameof(projectile_pile))) continue;
                 var cannonField = cannonType.GetField(field.Name, BindingFlags.Public | BindingFlags.Instance);
                 cannonField?.SetValue(cannon, field.GetValue(this));
             }
