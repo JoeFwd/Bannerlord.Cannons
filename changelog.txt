@@ -1,4 +1,8 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.0
+Game Versions: v1.2.12
+* feat(editor): allow cannon spawners to set dynamic projectile pile positions on cannon spawn
+---------------------------------------------------------------------------------------------------
 Version: 1.0.2
 Game Versions: v1.2.12
 * fix(editor): avoid crash when searching prefabs that use the ArtilleryRangedSiegeWeapon script

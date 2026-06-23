@@ -203,7 +203,7 @@ All fields below are public on `ArtilleryRangedSiegeWeapon` and visible in the s
 Install the `Bannerlord.Cannons` NuGet package from client modules that need to query registered cannons or provide an external logger.
 
 ```xml
-<PackageReference Include="Bannerlord.Cannons" Version="1.0.2" />
+<PackageReference Include="Bannerlord.Cannons" Version="1.1.0" />
 ```
 
 ```csharp
