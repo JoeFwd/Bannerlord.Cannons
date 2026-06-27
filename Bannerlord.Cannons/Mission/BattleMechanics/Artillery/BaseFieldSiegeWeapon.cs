@@ -16,6 +16,17 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         protected AmmoLimit _ammoLimitEnforcer;
         protected StandingPoint? ActiveAmmoPickupPoint { get; private set; }
         private Vec3 MissleStartingPositionForSimulation => MissileStartingPositionEntityForSimulation?.GlobalPosition ?? Vec3.Zero;
+
+        /// <summary>
+        /// Muzzle-exit world position from the <c>projectile_leaving_position</c> entity, when
+        /// available. This is just outside the barrel mesh — preferred as missile spawn point
+        /// to avoid clipping the barrel collision at low pitch angles. Falls back to the
+        /// projectile entity's position when the muzzle entity is missing or invalid.
+        /// </summary>
+        public Vec3 MuzzleExitPosition =>
+            MissileStartingPositionEntityForSimulation != null && MissileStartingPositionEntityForSimulation.WeakEntity.IsValid
+                ? MissileStartingPositionEntityForSimulation.GlobalPosition
+                : ProjectileEntityCurrentGlobalPosition;
         private readonly ResolveActivePickupPointUseCase _resolveUseCase = new();
 
         public bool PreferHighAngle = false;

@@ -170,9 +170,11 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
 
         private void InitialiseMissileStartingPositionEntityForSimulation()
         {
-            if (MissileStartingPositionEntityForSimulation != null)
-                return;
-
+            // v1.3's base OnInit sets MissileStartingPositionEntityForSimulation via CreateFromWeakEntity
+            // after searching only under a "clean/" child. If the entity is not found there,
+            // CreateFromWeakEntity returns a non-null but invalid GameEntity, so a null-check guard
+            // would incorrectly skip this recursive search. Always run it to find the entity regardless
+            // of what the base class set.
             var childEntities = new List<WeakGameEntity>();
             GameEntity.GetChildrenRecursive(ref childEntities);
             var match = childEntities.FirstOrDefault(x => x.IsValid && x.Name == "projectile_leaving_position");

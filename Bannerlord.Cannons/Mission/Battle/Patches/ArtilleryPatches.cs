@@ -2,7 +2,10 @@ using Bannerlord.Cannons.BattleMechanics.Artillery;
 using System.Reflection;
 using Harmony.DependencyInjection.Patches;
 using HarmonyLib;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using TaleWorlds.Core;
+using TaleWorlds.Engine;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
 
@@ -15,10 +18,45 @@ namespace Bannerlord.Cannons.Integration.Mission.Battle.Patches
             // Keep ballistic spread routed through BaseFieldSiegeWeapon's component abstraction.
             return fieldSiegeWeapon.GetBallisticErrorAppliedDirection(1f);
         }
+
+        /// <summary>
+        /// Finds the highest ancestor MissionObject that the spawning missile should ignore.
+        /// Walks up <c>fieldSiegeWeapon.GameEntity</c>'s parent chain, returning the highest
+        /// ancestor that still carries a MissionObject script. Stops when a parent has no
+        /// MissionObject (i.e. we've left the cannon prefab and entered the scene container).
+        /// This is required for DADG cannons where the cannon script sits on a child of the
+        /// prefab root (e.g. veuglaire_cannon_body) while the physics body lives on a sibling
+        /// (e.g. clean). Native missile collision ignore only propagates to descendants of the
+        /// passed entity, so we need the actual prefab root, not just <c>this</c>.
+        /// </summary>
+        internal static MissionObject FindPrefabRootMissionObject(BaseFieldSiegeWeapon fieldSiegeWeapon)
+        {
+            MissionObject best = fieldSiegeWeapon;
+            var current = fieldSiegeWeapon.GameEntity;
+            while (current.IsValid)
+            {
+                var parentWeak = current.Parent;
+                if (!parentWeak.IsValid) break;
+                var parent = GameEntity.CreateFromWeakEntity(parentWeak);
+                var parentMissionObject = parent.GetFirstScriptOfType<MissionObject>();
+                if (parentMissionObject == null) break;
+                best = parentMissionObject;
+                current = parentWeak;
+            }
+            return best;
+        }
     }
 
     public class ArtilleryShootProjectileAuxPatch : IPatch
     {
+        // Static because Harmony Prefix must be static. Populated by DI constructor below.
+        private static ILogger _logger = NullLogger.Instance;
+
+        public ArtilleryShootProjectileAuxPatch(ILoggerFactory loggerFactory)
+        {
+            _logger = loggerFactory.CreateLogger<ArtilleryShootProjectileAuxPatch>();
+        }
+
         public MethodInfo TargetMethod =>
             AccessTools.Method(typeof(RangedSiegeWeapon), "ShootProjectileAux");
 
@@ -68,15 +106,35 @@ namespace Bannerlord.Cannons.Integration.Mission.Battle.Patches
             float speedRatio = launchBaseSpeed > 0f ? launchSpeed / launchBaseSpeed : 0f;
             float missileMagnitudeBeforeDamageModel = speedRatio * speedRatio * missileTotalDamage;
 
+            // Walk up to the highest ancestor with a MissionObject (the prefab root).
+            // Cannot use GameEntity.Root: scenes wrap prefabs in a container that has no
+            // MissionObject script, so Root.GetFirstScriptOfType<MissionObject>() returns null
+            // and falls back to `this`, defeating the descendant-ignore propagation.
+            MissionObject missionObjectToIgnore = ArtilleryPatchHelpers.FindPrefabRootMissionObject(fieldSiegeWeapon);
+
+            // Spawn at the muzzle-exit entity (projectile_leaving_position) when available —
+            // it sits ~4cm further forward than the projectile entity and just outside the
+            // barrel collision mesh. Avoids clipping the barrel at low pitch.
+            Vec3 spawnPos = fieldSiegeWeapon.MuzzleExitPosition;
+            _logger.LogInformation(
+                "Cannon shoot: IsAI={IsAI}, Cannon={Cannon}, IgnoreEntity={IgnoreEntity}, SpawnPos={SpawnPos}, ProjectilePos={ProjectilePos}, Direction={Direction}, Speed={Speed}.",
+                ___LastShooterAgent.IsAIControlled,
+                fieldSiegeWeapon.GameEntity.Name,
+                missionObjectToIgnore.GameEntity.Name,
+                spawnPos,
+                fieldSiegeWeapon.ProjectileEntityCurrentGlobalPosition,
+                identity.f,
+                launchSpeed);
+
             TaleWorlds.MountAndBlade.Mission.Current.AddCustomMissile(___LastShooterAgent,
                 new MissionWeapon(missileItem, null, null, 1),
-                fieldSiegeWeapon.ProjectileEntityCurrentGlobalPosition,
+                spawnPos,
                 identity.f,
                 identity,
                 launchBaseSpeed,
                 launchSpeed,
                 false,
-                fieldSiegeWeapon,
+                missionObjectToIgnore,
                 -1);
 
             return false;
