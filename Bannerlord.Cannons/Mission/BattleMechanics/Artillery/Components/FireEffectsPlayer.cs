@@ -33,12 +33,13 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery.Components
 
             if (_fireSound == null || !_fireSound.IsValid)
             {
-                if (MBRandom.RandomFloat > 0.5f)
-                    _fireSound = SoundEvent.CreateEvent(_fireSoundIndex, _scene);
-                else
-                    _fireSound = SoundEvent.CreateEvent(_fireSoundIndex2, _scene);
+                int fireSoundIndex = ChooseFireSoundIndex();
+                if (_scene == null || fireSoundIndex < 0)
+                    return;
 
-                _fireSound.PlayInPosition(position);
+                _fireSound = SoundEvent.CreateEvent(fireSoundIndex, _scene);
+                if (_fireSound != null && _fireSound.IsValid)
+                    _fireSound.PlayInPosition(position);
             }
         }
 
@@ -52,6 +53,20 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery.Components
             }
 
             _fireSound = null;
+        }
+
+        private int ChooseFireSoundIndex()
+        {
+            bool fireSoundIndexIsValid = _fireSoundIndex >= 0;
+            bool fireSoundIndex2IsValid = _fireSoundIndex2 >= 0;
+
+            if (fireSoundIndexIsValid && fireSoundIndex2IsValid)
+                return MBRandom.RandomFloat > 0.5f ? _fireSoundIndex : _fireSoundIndex2;
+
+            if (fireSoundIndexIsValid)
+                return _fireSoundIndex;
+
+            return fireSoundIndex2IsValid ? _fireSoundIndex2 : -1;
         }
 
         private static void AddParticleToFrame(MatrixFrame frame, string particuleName)

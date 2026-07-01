@@ -116,19 +116,22 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         public void ApplyConfiguredStartingAmmo()
         {
             EnsureComponentsInitialised();
-            _ammoLimitEnforcer.SyncFromWeapon(AmmoCount);
+            var reserveAmmo = System.Math.Max(0, StartingAmmoCount - 1);
+            _ammoLimitEnforcer.SyncFromWeapon(reserveAmmo);
+            AmmoCount = _ammoLimitEnforcer.AmmoCount;
 
             if (!IsAmmoMeshReady)
             {
-                _ammoLimitEnforcer.TrySetAmmo(System.Math.Max(0, AmmoCount));
-                AmmoCount = _ammoLimitEnforcer.AmmoCount;
                 return;
             }
 
-            if (_ammoLimitEnforcer.TrySetAmmo(System.Math.Max(0, AmmoCount)))
-                ApplyAmmoStateToWeapon(updateAmmoMesh: true, runAmmoCheck: true, broadcastAmmoCount: false);
-            else
-                CheckAmmo();
+            ApplyAmmoStateToWeapon(updateAmmoMesh: true, runAmmoCheck: true, broadcastAmmoCount: false);
+        }
+
+        protected override void OnMissionReset()
+        {
+            base.OnMissionReset();
+            ApplyConfiguredStartingAmmo();
         }
 
         protected void ForceAmmoPointUsage()

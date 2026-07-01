@@ -81,6 +81,17 @@ public class AmmoLimitTests
     }
 
     [Fact]
+    public void SyncFromWeapon_WithZeroAmmo_MarksOutOfAmmo()
+    {
+        var component = new AmmoLimit(() => { });
+
+        component.SyncFromWeapon(0);
+
+        component.AmmoCount.Should().Be(0);
+        component.HasAmmo.Should().BeFalse();
+    }
+
+    [Fact]
     public void CheckAmmo_WhenAmmoExhausted_SetsHasAmmoFalse()
     {
         var component = new AmmoLimit(() => { });

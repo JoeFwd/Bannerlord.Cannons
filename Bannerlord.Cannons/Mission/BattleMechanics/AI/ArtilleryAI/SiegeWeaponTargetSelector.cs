@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions;
 using Bannerlord.Cannons.BattleMechanics.Artillery;
+using Bannerlord.Cannons.BattleMechanics.Artillery.Components;
 using Microsoft.Extensions.Logging;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
@@ -29,11 +30,16 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
         private const float MaxDistancePenalty = 0.1f;
 
         private readonly BaseFieldSiegeWeapon _weapon;
+        private readonly IArtilleryTargetValidator _targetValidator;
         private readonly ILogger _logger;
 
-        public SiegeWeaponTargetSelector(BaseFieldSiegeWeapon weapon, ILoggerFactory loggerFactory)
+        public SiegeWeaponTargetSelector(
+            BaseFieldSiegeWeapon weapon,
+            ILoggerFactory loggerFactory,
+            IArtilleryTargetValidator? targetValidator = null)
         {
             _weapon = weapon ?? throw new ArgumentNullException(nameof(weapon));
+            _targetValidator = targetValidator ?? new ArtilleryTargetValidator();
             _logger = (loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory)))
                 .CreateLogger<SiegeWeaponTargetSelector>();
         }
@@ -52,12 +58,12 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
                 WeakGameEntity entity = siegeWeapon.GetTargetEntity();
                 if (!entity.IsValid) continue;
 
-                Vec3 position = (entity.GlobalBoxMax + entity.GlobalBoxMin) * 0.5f;
+                Target candidate = new Target { TargetableObject = siegeWeapon };
+                ArtilleryTargetValidationResult validation = _targetValidator.Validate(_weapon, candidate);
+                if (!validation.IsValid)
+                    continue;
 
-                if (!_weapon.IsTargetInRange(position))                  continue;
-                if (!_weapon.IsTargetWithinDirectionRestriction(position)) continue;
-                if (!_weapon.HasLineOfSightToTarget(position))            continue;
-
+                Vec3 position = validation.AimPoint;
                 float distance = _weapon.GameEntity.GlobalPosition.Distance(position);
                 float score    = ScoringFormulas.SiegeWeaponDistanceScore(distance, ArtilleryAIConstants.MaxTargetRangeMetres);
                 LogSiegeWeaponScore(siegeWeapon, entity, distance, score);
@@ -65,8 +71,10 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
                 if (score > bestScore)
                 {
                     bestScore = score;
-                    best = new Target { TargetableObject = siegeWeapon, SelectedWorldPosition = position };
-                    best.UtilityValue = score;
+                    candidate.SelectedWorldPosition = position;
+                    candidate.BlockingDestructable = validation.BlockingDestructable;
+                    candidate.UtilityValue = score;
+                    best = candidate;
                 }
             }
 

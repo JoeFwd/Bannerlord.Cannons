@@ -10,7 +10,60 @@ namespace Bannerlord.Cannons.Integration.Mission.Battle.Patches
 {
     internal static class ArtilleryPatchHelpers
     {
-        internal static Vec3 GetPlayerControlledLaunchDirection(BaseFieldSiegeWeapon fieldSiegeWeapon)
+        internal static bool TrySetupProjectileToShoot(
+            BaseFieldSiegeWeapon fieldSiegeWeapon,
+            Agent shooter,
+            bool randomizeMissileSpeed,
+            out Vec3 direction,
+            out Mat3 orientation,
+            out float missileBaseSpeed,
+            out float missileShootingSpeed)
+        {
+            direction = Vec3.Zero;
+            orientation = Mat3.Identity;
+            missileBaseSpeed = fieldSiegeWeapon.ProjectileVelocity;
+            missileShootingSpeed = 0f;
+
+            if (!TryGetLaunchDirection(fieldSiegeWeapon, shooter, out Vec3 launchDirection))
+                return false;
+
+            orientation.f = launchDirection;
+            orientation.Orthonormalize();
+
+            float muzzleSpeed = missileBaseSpeed;
+            if (randomizeMissileSpeed)
+                muzzleSpeed *= MBRandom.RandomFloatRanged(0.9f, 1.1f);
+
+            direction = muzzleSpeed * orientation.f + fieldSiegeWeapon.GetGlobalVelocity();
+            missileShootingSpeed = direction.Normalize();
+            return true;
+        }
+
+        private static bool TryGetLaunchDirection(BaseFieldSiegeWeapon fieldSiegeWeapon, Agent shooter, out Vec3 direction)
+        {
+            direction = Vec3.Zero;
+
+            if (!shooter.IsAIControlled)
+            {
+                direction = GetPlayerControlledLaunchDirection(fieldSiegeWeapon);
+                return direction != Vec3.Zero;
+            }
+
+            // Battle AI: custom targeting sets Target.SelectedWorldPosition
+            if (fieldSiegeWeapon.Target != null)
+            {
+                Vec3 pos = fieldSiegeWeapon.Target.SelectedWorldPosition;
+                if (pos == Vec3.Zero) return false;
+                fieldSiegeWeapon.GetTargetReleaseAngle(pos, out direction);
+                return direction != Vec3.Zero;
+            }
+
+            // Siege AI: native RangedSiegeWeaponAi populates LastAiLaunchVector via AimAtThreat
+            direction = fieldSiegeWeapon.LastAiLaunchVector;
+            return direction != Vec3.Zero;
+        }
+
+        private static Vec3 GetPlayerControlledLaunchDirection(BaseFieldSiegeWeapon fieldSiegeWeapon)
         {
             // Keep ballistic spread routed through BaseFieldSiegeWeapon's component abstraction.
             return fieldSiegeWeapon.GetBallisticErrorAppliedDirection(1f);
@@ -27,59 +80,54 @@ namespace Bannerlord.Cannons.Integration.Mission.Battle.Patches
 
         public PatchType PatchType => PatchType.Prefix;
 
-        private static bool Prefix(RangedSiegeWeapon __instance, ItemObject missileItem, Agent ___LastShooterAgent)
+        private static bool Prefix(RangedSiegeWeapon __instance, ItemObject missileItem, bool randomizeMissileSpeed, Agent ___LastShooterAgent)
         {
-            if (__instance is not BaseFieldSiegeWeapon fieldSiegeWeapon || ___LastShooterAgent is null)
+            if (__instance is not BaseFieldSiegeWeapon fieldSiegeWeapon || ___LastShooterAgent is not { } shooter)
                 return true;
 
-            Mat3 identity = Mat3.Identity;
-            
-            if (!___LastShooterAgent.IsAIControlled)
-            {
-                identity.f = ArtilleryPatchHelpers.GetPlayerControlledLaunchDirection(fieldSiegeWeapon);
-            }
-            else
-            {
-                // Battle AI: custom targeting sets Target.SelectedWorldPosition
-                if (fieldSiegeWeapon.Target != null)
-                {
-                    Vec3 pos = fieldSiegeWeapon.Target.SelectedWorldPosition;
-                    if (pos == Vec3.Zero) return true;
-                    fieldSiegeWeapon.GetTargetReleaseAngle(pos, out Vec3 launchVec);
-                    if (launchVec == Vec3.Zero) return true;
-                    identity.f = launchVec;
-                }
-                // Siege AI: native RangedSiegeWeaponAi populates LastAiLaunchVector via AimAtThreat
-                else
-                {
-                    if (fieldSiegeWeapon.LastAiLaunchVector == Vec3.Zero) return true;
-                    identity.f = fieldSiegeWeapon.LastAiLaunchVector;
-                }
-            }
-            
-            identity.Orthonormalize();
+            if (!ArtilleryPatchHelpers.TrySetupProjectileToShoot(
+                    fieldSiegeWeapon,
+                    shooter,
+                    randomizeMissileSpeed,
+                    out Vec3 direction,
+                    out Mat3 orientation,
+                    out float missileBaseSpeed,
+                    out float missileShootingSpeed))
+                return true;
 
-            float projectileVelocity = fieldSiegeWeapon.ProjectileVelocity;
-            float launchBaseSpeed = projectileVelocity;
-            float launchSpeed = projectileVelocity;
-            WeaponComponentData? currentUsageItem = missileItem.PrimaryWeapon;
-            int missileItemBaseSpeed = currentUsageItem?.MissileSpeed ?? 0;
-            int missileTotalDamage = currentUsageItem?.MissileDamage ?? 0;
-            float speedRatio = launchBaseSpeed > 0f ? launchSpeed / launchBaseSpeed : 0f;
-            float missileMagnitudeBeforeDamageModel = speedRatio * speedRatio * missileTotalDamage;
-
-            TaleWorlds.MountAndBlade.Mission.Current.AddCustomMissile(___LastShooterAgent,
-                new MissionWeapon(missileItem, null, null, 1),
+            TaleWorlds.MountAndBlade.Mission.Current.AddCustomMissile(shooter,
+                new MissionWeapon(missileItem, null, shooter.Origin?.Banner, 1),
                 fieldSiegeWeapon.ProjectileEntityCurrentGlobalPosition,
-                identity.f,
-                identity,
-                launchBaseSpeed,
-                launchSpeed,
+                direction,
+                orientation,
+                missileShootingSpeed,
+                missileBaseSpeed,
                 false,
                 fieldSiegeWeapon,
                 -1);
 
             return false;
+        }
+    }
+
+    public class ArtilleryOnDeploymentFinishedPatch : IPatch
+    {
+        public MethodInfo TargetMethod =>
+            AccessTools.Method(typeof(RangedSiegeWeapon), nameof(RangedSiegeWeapon.OnDeploymentFinished));
+
+        public MethodInfo PatchMethod =>
+            AccessTools.Method(typeof(ArtilleryOnDeploymentFinishedPatch), nameof(Prefix));
+
+        public PatchType PatchType => PatchType.Prefix;
+
+        private static bool Prefix(RangedSiegeWeapon __instance)
+        {
+            return ShouldRunNativeDeployment(__instance);
+        }
+
+        internal static bool ShouldRunNativeDeployment(RangedSiegeWeapon weapon)
+        {
+            return weapon is not BaseFieldSiegeWeapon || weapon.Ai is RangedSiegeWeaponAi;
         }
     }
 

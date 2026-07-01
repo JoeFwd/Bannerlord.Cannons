@@ -92,12 +92,14 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
 
         public ArtilleryRangedSiegeWeapon()
         {
+            StartingAmmoCount = 20;
             _loggerFactory = NullLoggerFactory.Instance;
             _logger = _loggerFactory.CreateLogger<ArtilleryRangedSiegeWeapon>();
         }
 
         protected ArtilleryRangedSiegeWeapon(ILoggerFactory loggerFactory)
         {
+            StartingAmmoCount = 20;
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
             _logger = _loggerFactory.CreateLogger<ArtilleryRangedSiegeWeapon>();
         }
@@ -113,7 +115,8 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
                 Side,
                 Mission.Current?.IsSiegeBattle ?? false);
 
-            return Mission.Current.IsSiegeBattle && Side.Equals(BattleSideEnum.Attacker)
+            // Attacker cannons rely on FieldBattleWeaponAI even in siege missions.
+            return Mission.Current?.IsSiegeBattle == true && Side != BattleSideEnum.Attacker
                 ? (UsableMachineAIBase) new FieldSiegeWeaponAI(this)
                 : new FieldBattleWeaponAI(this, _loggerFactory);
         }
@@ -267,8 +270,14 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             HandleWaitingTimer(dt);
             UpdateRecoilEffect(dt);
             HandleRecoilReturn(dt);
-            // TODO: use that for field battles because there is no native team siege engine behaviour 
-            // HandleAITeamUsage(dt);
+            if (ShouldManageAiFormationUsage())
+                HandleAITeamUsage(dt);
+        }
+
+        private bool ShouldManageAiFormationUsage()
+        {
+            Mission? mission = Mission.Current;
+            return mission == null || !mission.IsSiegeBattle;
         }
 
         private bool IsPushInProgress() => _cycleState == CannonCycleState.Push;

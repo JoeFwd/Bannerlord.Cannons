@@ -1,5 +1,6 @@
 using Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions;
 using Bannerlord.Cannons.BattleMechanics.Artillery;
+using Bannerlord.Cannons.BattleMechanics.Artillery.Components;
 using Microsoft.Extensions.Logging;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
@@ -34,6 +35,7 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
         private readonly BaseFieldSiegeWeapon _weapon;
         private readonly ITargetSelector _siegeWeaponSelector;
         private readonly ITargetSelector _formationSelector;
+        private readonly IArtilleryTargetValidator _targetValidator;
         private readonly ILogger _logger;
         private Target? _target;
         private Timer _findTargetTimer;
@@ -43,7 +45,8 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
             _weapon = weapon ?? throw new System.ArgumentNullException(nameof(weapon));
             if (loggerFactory == null) throw new System.ArgumentNullException(nameof(loggerFactory));
 
-            _siegeWeaponSelector = new SiegeWeaponTargetSelector(weapon, loggerFactory);
+            _targetValidator     = new ArtilleryTargetValidator();
+            _siegeWeaponSelector = new SiegeWeaponTargetSelector(weapon, loggerFactory, _targetValidator);
             _formationSelector   = new MobTargetSelector(weapon);
             _logger = loggerFactory.CreateLogger<FieldBattleWeaponAI>();
             _findTargetTimer     = new Timer(Mission.Current.CurrentTime, FindTargetInterval);
@@ -75,25 +78,26 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
         /// </summary>
         private void TickWithTarget()
         {
-            if (_weapon.Target != _target)
-                _weapon.SetTarget(_target);
+            Target? target = _target;
+            if (target == null)
+                return;
+
+            if (_weapon.Target != target)
+                _weapon.SetTarget(target);
             if (_weapon.Target == null)
                 return;
-            if (_weapon.PilotAgent.Formation.FiringOrder.OrderType == OrderType.HoldFire)
-                return;
 
-            UpdateLeadPosition(_weapon.Target);
-            Vec3 aimPoint = _weapon.Target.SelectedWorldPosition;
-
-            if (aimPoint == Vec3.Zero)
-                return;
-
-            if (!_weapon.CanShootAtPoint(aimPoint))
+            UpdateLeadPosition(target);
+            ArtilleryTargetValidationResult validation = _targetValidator.Validate(_weapon, target);
+            if (!validation.IsValid)
             {
-                LogRejectedHeldTarget(_weapon.Target, "CannotShootAtPoint", aimPoint);
+                LogRejectedHeldTarget(target, validation.RejectionReason, target.SelectedWorldPosition);
                 _target = null;
                 return;
             }
+
+            ApplyValidation(target, validation);
+            Vec3 aimPoint = validation.AimPoint;
 
             if (!_weapon.IsSafeToFire())
             {
@@ -140,20 +144,26 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
 
         private void TrySetSelectedTarget(Target target, string targetKind)
         {
-            if (target.SelectedWorldPosition == Vec3.Zero)
+            ArtilleryTargetValidationResult validation = _targetValidator.Validate(_weapon, target);
+            if (!validation.IsValid)
             {
-                LogRejectedSelectedTarget(target, targetKind, "MissingSelectedWorldPosition");
+                LogRejectedSelectedTarget(target, targetKind, validation.RejectionReason);
                 return;
             }
 
-            if (!_weapon.CanShootAtPoint(target.SelectedWorldPosition))
-            {
-                LogRejectedSelectedTarget(target, targetKind, "CannotShootAtPoint");
-                return;
-            }
-
+            ApplyValidation(target, validation);
             _target = target;
             LogSelectedTarget(_target, targetKind);
+        }
+
+        private static void ApplyValidation(Target target, ArtilleryTargetValidationResult validation)
+        {
+            target.SelectedWorldPosition = validation.AimPoint;
+            if (validation.BlockingDestructable != null)
+            {
+                target.BlockingDestructable = validation.BlockingDestructable;
+                target.TargetableObject = null;
+            }
         }
 
         private void LogSelectedTarget(Target target, string targetKind)
