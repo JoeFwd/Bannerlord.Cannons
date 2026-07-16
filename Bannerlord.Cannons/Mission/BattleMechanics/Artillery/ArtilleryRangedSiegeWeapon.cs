@@ -116,8 +116,8 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
                 Mission.Current?.IsSiegeBattle ?? false);
 
             // Attacker cannons rely on FieldBattleWeaponAI even in siege missions.
-            return Mission.Current?.IsSiegeBattle == true && Side != BattleSideEnum.Attacker
-                ? (UsableMachineAIBase) new FieldSiegeWeaponAI(this)
+            return Mission.Current.IsSiegeBattle && Side.Equals(BattleSideEnum.Attacker) 
+                ? new FieldSiegeWeaponAI(this)
                 : new FieldBattleWeaponAI(this, _loggerFactory);
         }
 

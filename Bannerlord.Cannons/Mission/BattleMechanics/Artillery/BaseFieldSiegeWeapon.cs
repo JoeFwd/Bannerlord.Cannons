@@ -290,7 +290,9 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             return _ballisticsService.GetBallisticErrorAppliedDirection(ShootingDirection, ballisticErrorAmount);
         }
 
-        public bool IsTargetWithinDirectionRestriction(Vec3 target) => CanShootAtPoint(target);
+        public bool IsTargetWithinDirectionRestriction(Vec3 target)
+            => TryGetWorldUpAim(target, out float targetDirection, out _)
+               && IsDirectionWithinRestriction(targetDirection);
 
         /// <summary>
         /// Aims at <paramref name="target"/> using world-up axis angle calculation — equivalent
@@ -299,19 +301,32 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         /// </summary>
         public bool AimAtTargetWorldUp(Vec3 target)
         {
-            float releaseAngle = GetTargetReleaseAngle(target);
+            if (!TryGetWorldUpAim(target, out float targetDirection, out float releaseAngle))
+                return false;
+
+            bool isWithinDirectionRestriction = IsDirectionWithinRestriction(targetDirection);
+            targetDirection = MBMath.ClampAngle(targetDirection, 0f, DirectionRestriction);
+            releaseAngle = MBMath.ClampAngle(releaseAngle, ReleaseAngleRestrictionCenter, ReleaseAngleRestrictionAngle);
+
+            GiveExactInput(targetDirection, releaseAngle);
+            return isWithinDirectionRestriction && CheckIsTargetReached(target);
+        }
+
+        private bool TryGetWorldUpAim(Vec3 target, out float targetDirection, out float releaseAngle)
+        {
+            targetDirection = 0f;
+            MatrixFrame globalFrame = GameEntity.GetGlobalFrame();
+            releaseAngle = GetTargetReleaseAngle(target);
             if (float.IsNaN(releaseAngle) || float.IsInfinity(releaseAngle) || releaseAngle > MathF.PI / 2f)
                 return false;
 
-            MatrixFrame globalFrame = GameEntity.GetGlobalFrame();
             globalFrame.rotation.RotateAboutUp(MathF.PI);
-            float targetDirection = globalFrame.TransformToLocal(target).AsVec2.RotationInRadians;
-
-            targetDirection = MBMath.ClampAngle(targetDirection, 0f, DirectionRestriction);
-            releaseAngle    = MBMath.ClampAngle(releaseAngle, ReleaseAngleRestrictionCenter, ReleaseAngleRestrictionAngle);
-
-            GiveExactInput(targetDirection, releaseAngle);
-            return CheckIsTargetReached(target);
+            targetDirection = globalFrame.TransformToLocal(target).AsVec2.RotationInRadians;
+            return true;
         }
+
+        private bool IsDirectionWithinRestriction(float targetDirection)
+            => MathF.Abs(MBMath.GetSmallestDifferenceBetweenTwoAngles(0f, targetDirection))
+               <= DirectionRestriction / 2f;
     }
 }

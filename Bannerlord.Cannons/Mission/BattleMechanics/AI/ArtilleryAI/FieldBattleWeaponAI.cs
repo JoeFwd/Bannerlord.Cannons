@@ -1,6 +1,5 @@
 using Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions;
 using Bannerlord.Cannons.BattleMechanics.Artillery;
-using Bannerlord.Cannons.BattleMechanics.Artillery.Components;
 using Microsoft.Extensions.Logging;
 using TaleWorlds.Core;
 using TaleWorlds.Engine;
@@ -35,7 +34,6 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
         private readonly BaseFieldSiegeWeapon _weapon;
         private readonly ITargetSelector _siegeWeaponSelector;
         private readonly ITargetSelector _formationSelector;
-        private readonly IArtilleryTargetValidator _targetValidator;
         private readonly ILogger _logger;
         private Target? _target;
         private Timer _findTargetTimer;
@@ -44,9 +42,8 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
         {
             _weapon = weapon ?? throw new System.ArgumentNullException(nameof(weapon));
             if (loggerFactory == null) throw new System.ArgumentNullException(nameof(loggerFactory));
-
-            _targetValidator     = new ArtilleryTargetValidator();
-            _siegeWeaponSelector = new SiegeWeaponTargetSelector(weapon, loggerFactory, _targetValidator);
+        
+            _siegeWeaponSelector = new SiegeWeaponTargetSelector(weapon, loggerFactory);
             _formationSelector   = new MobTargetSelector(weapon);
             _logger = loggerFactory.CreateLogger<FieldBattleWeaponAI>();
             _findTargetTimer     = new Timer(Mission.Current.CurrentTime, FindTargetInterval);
@@ -88,16 +85,12 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
                 return;
 
             UpdateLeadPosition(target);
-            ArtilleryTargetValidationResult validation = _targetValidator.Validate(_weapon, target);
-            if (!validation.IsValid)
+            Vec3 aimPoint = target.SelectedWorldPosition;
+            if (aimPoint == Vec3.Zero)
             {
-                LogRejectedHeldTarget(target, validation.RejectionReason, target.SelectedWorldPosition);
                 _target = null;
                 return;
             }
-
-            ApplyValidation(target, validation);
-            Vec3 aimPoint = validation.AimPoint;
 
             if (!_weapon.IsSafeToFire())
             {
@@ -144,26 +137,8 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
 
         private void TrySetSelectedTarget(Target target, string targetKind)
         {
-            ArtilleryTargetValidationResult validation = _targetValidator.Validate(_weapon, target);
-            if (!validation.IsValid)
-            {
-                LogRejectedSelectedTarget(target, targetKind, validation.RejectionReason);
-                return;
-            }
-
-            ApplyValidation(target, validation);
             _target = target;
             LogSelectedTarget(_target, targetKind);
-        }
-
-        private static void ApplyValidation(Target target, ArtilleryTargetValidationResult validation)
-        {
-            target.SelectedWorldPosition = validation.AimPoint;
-            if (validation.BlockingDestructable != null)
-            {
-                target.BlockingDestructable = validation.BlockingDestructable;
-                target.TargetableObject = null;
-            }
         }
 
         private void LogSelectedTarget(Target target, string targetKind)
@@ -178,39 +153,6 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
                 target.Formation?.CountOfUnits,
                 target.Formation != null && FormationTargetSelector.ShouldFilterOutPlayerFormation(target.Formation),
                 GetTargetEntityName(target.TargetableObject),
-                target.UtilityValue);
-        }
-
-        private void LogRejectedSelectedTarget(Target target, string targetKind, string reason)
-        {
-            _logger.LogInformation(
-                "Cannon rejected selected target: Cannon={CannonName}, CannonEntity={CannonEntity}, CannonSide={CannonSide}, TargetKind={TargetKind}, Reason={Reason}, FormationIndex={FormationIndex}, UnitCount={UnitCount}, ContainsPlayer={ContainsPlayer}, SiegeTargetEntity={SiegeTargetEntity}, AimPoint={AimPoint}, Score={Score}.",
-                GetCannonName(),
-                (_weapon.GameEntity.IsValid ? _weapon.GameEntity.Name : null) ?? string.Empty,
-                _weapon.Side,
-                targetKind,
-                reason,
-                target.Formation?.Index,
-                target.Formation?.CountOfUnits,
-                target.Formation != null && FormationTargetSelector.ShouldFilterOutPlayerFormation(target.Formation),
-                GetTargetEntityName(target.TargetableObject),
-                target.SelectedWorldPosition,
-                target.UtilityValue);
-        }
-
-        private void LogRejectedHeldTarget(Target target, string reason, Vec3 aimPoint)
-        {
-            _logger.LogInformation(
-                "Cannon rejected held target: Cannon={CannonName}, CannonEntity={CannonEntity}, CannonSide={CannonSide}, Reason={Reason}, FormationIndex={FormationIndex}, UnitCount={UnitCount}, ContainsPlayer={ContainsPlayer}, SiegeTargetEntity={SiegeTargetEntity}, AimPoint={AimPoint}, Score={Score}.",
-                GetCannonName(),
-                (_weapon.GameEntity.IsValid ? _weapon.GameEntity.Name : null) ?? string.Empty,
-                _weapon.Side,
-                reason,
-                target.Formation?.Index,
-                target.Formation?.CountOfUnits,
-                target.Formation != null && FormationTargetSelector.ShouldFilterOutPlayerFormation(target.Formation),
-                GetTargetEntityName(target.TargetableObject),
-                aimPoint,
                 target.UtilityValue);
         }
 
