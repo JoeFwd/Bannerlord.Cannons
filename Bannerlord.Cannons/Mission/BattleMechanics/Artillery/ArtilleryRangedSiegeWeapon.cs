@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI;
 using Bannerlord.Cannons.BattleMechanics.Artillery.Components;
+using Bannerlord.Cannons.Domain.Crew;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using TaleWorlds.Core;
@@ -30,6 +31,14 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
 
         private IArtilleryCrewProvider _artilleryCrewProvider = null!;
         private ITargetingPolicy _targetingPolicy = null!;
+
+        // Crew keeper — one use-case instance per cannon, one registry shared across all cannons
+        // in the mission. The registry is static because UsableMachine is a TaleWorlds type that
+        // cannot live in the Application or Domain layers; sharing it statically avoids DI
+        // plumbing without violating layering rules.
+        private readonly SelectCrewAssignmentsUseCase _selectCrewUseCase = new SelectCrewAssignmentsUseCase();
+        private static CannonCrewRegistry _crewRegistry = new CannonCrewRegistry();
+        private List<StandingPoint> _crewSeats = new List<StandingPoint>();
 
         #region animations
         private ActionIndexCache _idleAnimationActionIndex;
@@ -154,6 +163,8 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             if (Mission.Current != null)
                 Mission.Current.OnBeforeAgentRemoved -= OnBeforeAgentRemoved;
 
+            _crewRegistry.ReleaseAllFor(this);
+
             foreach (var formation in UserFormations?.ToList() ?? new List<Formation>())
                 formation.StopUsingMachine(this);
         }
@@ -162,6 +173,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         {
             if (_lastLoaderAgent == affectedAgent)
                 _lastLoaderAgent = null;
+            _crewRegistry.Release(affectedAgent.Index);
         }
 
         private void BuildInitContext()
@@ -186,6 +198,20 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         private void InitialisePostBaseInitContext()
         {
             _waitStandingPoint = StandingPoints.FirstOrDefault(sp => sp.GameEntity.HasTag(WaitStandingPointTag));
+
+            // Build the ordered crew-seat list: pilot first, then reload seats.
+            _crewSeats = new List<StandingPoint>();
+            if (PilotStandingPoint != null)
+                _crewSeats.Add(PilotStandingPoint);
+            if (ReloadStandingPoints != null)
+            {
+                foreach (var sp in ReloadStandingPoints)
+                {
+                    if (sp != null && !_crewSeats.Contains(sp))
+                        _crewSeats.Add(sp);
+                }
+            }
+
             _barrelInitialLocalFrame = _cannonEntities.Barrel.GameEntity.GetFrame();
 
             WeakGameEntity? projectileEntity = Projectile?.GameEntity;
@@ -272,6 +298,27 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             HandleRecoilReturn(dt);
             if (ShouldManageAiFormationUsage())
                 HandleAITeamUsage(dt);
+            KeepCrewSeatsOccupied();
+        }
+
+        private void KeepCrewSeatsOccupied()
+        {
+            if (_crewSeats.Count == 0 || Team == null)
+                return;
+
+            var port = new BannerlordCrewAssignmentPort(
+                _crewSeats,
+                PilotStandingPoint,
+                Team,
+                ReloaderAgent,
+                ReloaderAgentOriginalPoint,
+                _artilleryCrewProvider,
+                this,
+                Side,
+                _crewRegistry);
+
+            var result = _selectCrewUseCase.Execute(port.CreateRequest());
+            port.ApplyAssignments(result);
         }
 
         private bool ShouldManageAiFormationUsage()
