@@ -14,8 +14,9 @@ namespace Bannerlord.Cannons.Domain.Ammo
                     ActivationCommands = new AmmoPickupPointActivationCommand[0]
                 };
 
-            var shouldEnablePickup = request.WeaponState == AmmoWeaponState.LoadingAmmo
-                                     && request.HasAmmo
+            // Must stay active for as long as there is ammo, like vanilla: detachment weight is
+            // scored from the usable pickup points, so deactivating them starves the weapon of crew.
+            var shouldEnablePickup = request.HasAmmo
                                      && !request.LoadAmmoPointHasUser
                                      && !request.LoadAmmoPointHasAIMovingTo;
 

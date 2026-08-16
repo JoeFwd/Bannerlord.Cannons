@@ -143,6 +143,10 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             // authority here. Must be set in code — script variables are applied before OnInit.
             SetForcedUse(false);
 
+            // Kept permanently off so the loader returns to his can_pick_up_ammo point after a
+            // shot: it is the only seat a replacement reloader can ever be recruited from.
+            SetActivationWaitingPoint(false);
+
             PilotStandingPoint.AddComponent(new ClearHandInverseKinematicsOnStopUsageComponent());
             _lastCurrentDirection = CurrentDirection;
             ApplyAimChange();
@@ -265,7 +269,6 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
 
         protected override void OnTick(float dt)
         {
-            CheckNullReloaderOriginalPoint();
             base.OnTick(dt);
             ForceAmmoPointUsage();
             HandleAmmoPickup();
@@ -282,22 +285,6 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         {
             if (Team == null) return;
             _aiFormationManager.Update(Team, UserFormations, this);
-        }
-
-        private void CheckNullReloaderOriginalPoint()
-        {
-            if (ReloaderAgent == null)
-                return;
-
-            bool isInvalidForDetachment = !ReloaderAgent.IsActive()
-                                          || ReloaderAgent.Team == null
-                                          || ReloaderAgent.Detachment != this;
-
-            if (ReloaderAgentOriginalPoint == null || isInvalidForDetachment)
-            {
-                ReloaderAgent.StopUsingGameObject(true);
-                ReloaderAgent = null;
-            }
         }
 
         private void HandleWaitingTimer(float dt)
@@ -358,12 +345,6 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
                 case WeaponState.WaitingAfterShooting:
                     DoSlideBack();
                     break;
-                case WeaponState.WaitingBeforeIdle:
-                    SendLoaderAgentToWaitingPoint();
-                    break;
-                case WeaponState.LoadingAmmo:
-                    SetActivationWaitingPoint(false);
-                    break;
             }
         }
 
@@ -378,15 +359,6 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             _cycleState = CannonCycleState.None;
         }
 
-        private void SendLoaderAgentToWaitingPoint()
-        {
-            if (_waitStandingPoint != null && CanUseAsMachineMover(_lastLoaderAgent))
-            {
-                SetActivationWaitingPoint(true);
-                _lastLoaderAgent.AIMoveToGameObjectEnable(_waitStandingPoint, this, Agent.AIScriptedFrameFlags.NoAttack);
-            }
-        }
-
         protected override void ApplyCurrentDirectionToEntity()
         {
             base.ApplyCurrentDirectionToEntity();
@@ -397,12 +369,6 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         {
             _waitStandingPoint?.SetIsDeactivatedSynched(!activate);
         }
-
-        private bool CanUseAsMachineMover(Agent? agent)
-            => agent is { IsAIControlled: true }
-               && agent.IsActive()
-               && agent.Team != null
-               && agent.Detachment == this;
 
         private void HandleRecoilReturn(float dt)
         {
@@ -459,6 +425,10 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         }
 
         public override SiegeEngineType GetSiegeEngineType() => Side != BattleSideEnum.Attacker ? DefaultSiegeEngineTypes.Catapult : DefaultSiegeEngineTypes.Onager;
+
+        // Cannons crew via external ammo-pickup standing points (like the vanilla Mangonel),
+        // not the default pilot-only detachment scoring.
+        protected override float GetDetachmentWeightAux(BattleSideEnum side) => GetDetachmentWeightAuxForExternalAmmoWeapons(side);
 
         public override TargetFlags GetTargetFlags()
         {

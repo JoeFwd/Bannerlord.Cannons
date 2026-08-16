@@ -85,7 +85,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery.Components
             if (!_onCarriedProjectileDroppedCache.ContainsKey(user.Index)
                 && user.WieldedWeapon.Item == originalMissileItem)
             {
-                _onCarriedProjectileDroppedCache[user.Index] = () => OnCarriedProjectileDropped(user, loadAmmoEndAction);
+                _onCarriedProjectileDroppedCache[user.Index] = () => OnCarriedProjectileDropped(user, loadAmmoPoint, loadAmmoEndAction);
                 user.OnAgentWieldedItemChange += _onCarriedProjectileDroppedCache[user.Index];
             }
         }
@@ -97,12 +97,18 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery.Components
                && candidate.Team != null
                && candidate.Detachment == usableMachine;
 
-        private void OnCarriedProjectileDropped(Agent agent, ActionIndexCache loadAmmoEndAction)
+        private void OnCarriedProjectileDropped(Agent agent, StandingPoint loadAmmoPoint, ActionIndexCache loadAmmoEndAction)
         {
             agent.OnAgentWieldedItemChange -= _onCarriedProjectileDroppedCache[agent.Index];
             _onCarriedProjectileDroppedCache.Remove(agent.Index);
 
-            if (agent.GetCurrentAction(1) != loadAmmoEndAction)
+            if (agent.GetCurrentAction(1) == loadAmmoEndAction)
+                return;
+
+            // Only ever release the load point. This runs inside StandingPoint.TickAux, which
+            // keeps dereferencing UserAgent after its single HasUser check, so evicting the agent
+            // from any other point NREs vanilla on its next line.
+            if (agent.CurrentlyUsedGameObject == loadAmmoPoint)
                 agent.StopUsingGameObject();
         }
     }
