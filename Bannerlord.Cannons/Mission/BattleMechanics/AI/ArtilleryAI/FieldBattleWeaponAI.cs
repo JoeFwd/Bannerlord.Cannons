@@ -31,12 +31,21 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
         /// <summary>How often (in seconds) a new target is searched for when idle.</summary>
         private const float FindTargetInterval = 0.5f;
 
+        /// <summary>How long (in seconds) a target the cannon could not safely fire at is skipped.</summary>
+        private const float BlockedTargetCooldown = 10f;
+
+        /// <summary>How long (in seconds) the cannon may keep slewing onto a target before giving up on it.</summary>
+        private const float MaxAimSeconds = 5f;
+
         private readonly BaseFieldSiegeWeapon _weapon;
         private readonly ITargetSelector _siegeWeaponSelector;
         private readonly ITargetSelector _formationSelector;
         private readonly ILogger _logger;
         private Target? _target;
         private Timer _findTargetTimer;
+        private ITargetable? _blockedTargetable;
+        private float _blockedTargetableUntil;
+        private float _aimDeadline;
 
         public FieldBattleWeaponAI(BaseFieldSiegeWeapon weapon, ILoggerFactory loggerFactory) : base(weapon)
         {
@@ -65,13 +74,12 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
         }
 
         /// <summary>
-        /// Called each tick while a target is held. Updates the lead position, checks
-        /// all fire conditions (aim, range, safety), and fires if they all pass.
+        /// Called each tick while a target is held. Updates the lead position, aims,
+        /// then checks the remaining fire conditions and fires if they all pass.
         ///
         /// The target is cleared after a successful shot so the next tick starts a
-        /// fresh selection cycle. It is also cleared when the cannon is unsafe to fire
-        /// (e.g. friendlies in the way) — the AI will re-select next interval rather
-        /// than waiting indefinitely for the obstruction to clear.
+        /// fresh selection cycle. A target the cannon cannot safely fire at is dropped
+        /// *and* blacklisted.
         /// </summary>
         private void TickWithTarget()
         {
@@ -92,19 +100,54 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
                 return;
             }
 
-            if (!_weapon.IsSafeToFire())
+            // Lead prediction can drift the aim point out of the traverse arc after selection.
+            // Aiming anyway would slew the barrel to the arc limit, so drop the target instead.
+            if (!_weapon.IsTargetWithinDirectionRestriction(aimPoint))
             {
-                // Friendly in the way — abandon target rather than waiting indefinitely.
+                BlockCurrentTarget();
                 _target = null;
                 return;
             }
 
-            if (ReadyToFire(aimPoint))
+            // Aim before testing safety: IsSafeToFire() traces along the barrel's current
+            // ShootingDirection, which only points at the target once AimAtTargetWorldUp has run.
+            if (!ReadyToFire(aimPoint))
             {
-                _weapon.AiRequestsShoot();
-                _target = null; // consumed — next tick will search for a new target
+                // Still slewing — retry next tick, but do not hold a target that never converges.
+                // No blacklisting: aiming is normally slow because the weapon was reloading.
+                if (Mission.Current.CurrentTime >= _aimDeadline)
+                    _target = null;
+                return;
             }
+
+            if (!_weapon.IsSafeToFire())
+            {
+                BlockCurrentTarget();
+                _target = null;
+                return;
+            }
+
+            _weapon.AiRequestsShoot();
+            _target = null; // consumed — next tick will search for a new target
         }
+
+        /// <summary>
+        /// Suppresses the current target for <see cref="BlockedTargetCooldown"/> seconds, so the
+        /// selector falls through to another one instead of re-picking the same top score.
+        /// </summary>
+        private void BlockCurrentTarget()
+        {
+            if (_target?.TargetableObject == null)
+                return;
+
+            _blockedTargetable = _target.TargetableObject;
+            _blockedTargetableUntil = Mission.Current.CurrentTime + BlockedTargetCooldown;
+        }
+
+        private bool IsBlocked(Target target)
+            => target.TargetableObject != null
+               && target.TargetableObject == _blockedTargetable
+               && Mission.Current.CurrentTime < _blockedTargetableUntil;
 
         private bool ReadyToFire(Vec3 aimPoint)
             => aimPoint != Vec3.Zero
@@ -123,7 +166,7 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
                 return;
 
             Target? siegeWeaponTarget = _siegeWeaponSelector.FindBestTarget();
-            if (siegeWeaponTarget != null)
+            if (siegeWeaponTarget != null && !IsBlocked(siegeWeaponTarget))
             {
                 TrySetSelectedTarget(siegeWeaponTarget, "SiegeWeapon");
                 if (_target != null)
@@ -138,6 +181,7 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
         private void TrySetSelectedTarget(Target target, string targetKind)
         {
             _target = target;
+            _aimDeadline = Mission.Current.CurrentTime + MaxAimSeconds;
             LogSelectedTarget(_target, targetKind);
         }
 

@@ -112,6 +112,7 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
                 .FindAllWithType<SiegeWeapon>()
                 .Where(sw => sw.Side != BattleSideEnum.None
                     && sw.Side != _weapon.Side
+                    && sw is not SiegeLadder
                     && (sw.DestructionComponent == null || !sw.DestructionComponent.IsDestroyed));
         }
     }
