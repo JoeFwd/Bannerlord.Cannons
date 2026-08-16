@@ -40,22 +40,6 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions
         }
 
         /// <summary>
-        /// Returns the 2D distance from the target tactical position to the own
-        /// team's average position. Intended for positional scoring; unused in the
-        /// current formation targeting flow.
-        /// </summary>
-        public static Func<Target, float> TargetDistanceToOwnArmy(Team? team = null)
-        {
-            return target =>
-            {
-                if (team != null)
-                    return target.TacticalPosition.Position.AsVec2.Distance(team.QuerySystem.AveragePosition);
-
-                return 0f;
-            };
-        }
-
-        /// <summary>
         /// Returns the 3D distance from a dynamically-evaluated cannon position to
         /// the target. Use <paramref name="weaponPositionProvider"/> to capture the
         /// weapon's <c>GlobalPosition</c> at evaluation time rather than at
@@ -63,10 +47,6 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions
         /// </summary>
         public static Func<Target, float> DistanceToTarget(Func<Vec3> weaponPositionProvider)
             => target => weaponPositionProvider.Invoke().Distance(target.GetPosition());
-
-        /// <summary>Returns the formation's combat power (TaleWorlds QuerySystem value).</summary>
-        public static Func<Target, float> FormationPower()
-            => target => target.Formation.QuerySystem.FormationPower;
 
         /// <summary>Sums the QuerySystem team power of every enemy team.</summary>
         public static float CalculateEnemyTotalPower(Team chosenTeam)
@@ -76,39 +56,6 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.CommonAIFunctions
                 power += team.QuerySystem.TeamPower;
             return power;
         }
-
-        /// <summary>
-        /// Scores a tactical position for artillery placement based on terrain type
-        /// and region membership. Higher ground, cliffs, and chokepoints score well;
-        /// forests and difficult terrain penalise the score.
-        /// </summary>
-        public static Func<Target, float> AssessPositionForArtillery()
-        {
-            return target =>
-            {
-                float value = 0.2f;
-
-                if (target.TacticalPosition.TacticalPositionType == TacticalPosition.TacticalPositionTypeEnum.HighGround)
-                    value += 0.6f;
-                if (target.TacticalPosition.TacticalPositionType == TacticalPosition.TacticalPositionTypeEnum.Cliff)
-                    value += 0.6f;
-                if (target.TacticalPosition.TacticalPositionType == TacticalPosition.TacticalPositionTypeEnum.ChokePoint)
-                    value += 0.6f;
-
-                if (target.TacticalPosition.TacticalRegionMembership == TacticalRegion.TacticalRegionTypeEnum.Opening)
-                    value += 0.2f;
-                if (target.TacticalPosition.TacticalRegionMembership == TacticalRegion.TacticalRegionTypeEnum.Forest)
-                    value -= 0.1f;
-                if (target.TacticalPosition.TacticalRegionMembership == TacticalRegion.TacticalRegionTypeEnum.DifficultTerrain)
-                    value -= 0.05f;
-
-                return value;
-            };
-        }
-
-        /// <summary>Returns the world-space ground height of a target tactical position.</summary>
-        public static Func<Target, float> PositionHeight()
-            => target => target.TacticalPosition.Position.GetGroundZ();
 
         /// <summary>Returns the number of units currently in the target formation.</summary>
         public static Func<Target, float> UnitCount()
