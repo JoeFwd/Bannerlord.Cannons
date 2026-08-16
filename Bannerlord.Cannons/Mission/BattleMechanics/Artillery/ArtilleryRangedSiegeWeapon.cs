@@ -28,7 +28,6 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             Push
         }
 
-        private IArtilleryCrewProvider _artilleryCrewProvider = null!;
         private ITargetingPolicy _targetingPolicy = null!;
 
         #region animations
@@ -126,7 +125,6 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         protected override void OnInit()
         {
 
-            _artilleryCrewProvider = ArtilleryCrewProviderFactory.CreateArtilleryCrewProvider();
             _targetingPolicy = CreateTargetingPolicy();
 
             BuildInitContext();
@@ -140,6 +138,11 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             TimeGapBetweenShootActionAndProjectileLeaving = 0f;
             TimeGapBetweenShootingEndAndReloadingStart = 0f;
             EnemyRangeToStopUsing = 5f;
+
+            // Disables vanilla's own crewing pass; AIFormationManager is the sole crewing
+            // authority here. Must be set in code — script variables are applied before OnInit.
+            SetForcedUse(false);
+
             PilotStandingPoint.AddComponent(new ClearHandInverseKinematicsOnStopUsageComponent());
             _lastCurrentDirection = CurrentDirection;
             ApplyAimChange();
@@ -212,7 +215,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             _fireEffectsPlayer = new FireEffectsPlayer();
             _ammoPickupHandler = new AmmoPickupHandler(_ammoLimitEnforcer);
             _ammoLoadHandler = new AmmoLoadHandler();
-            _aiFormationManager = new AIFormationManager(_artilleryCrewProvider);
+            _aiFormationManager = new AIFormationManager();
             _postReloadReadinessPolicy = new FixedDelayPostReloadReadinessPolicy();
         }
 
@@ -270,14 +273,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             HandleWaitingTimer(dt);
             UpdateRecoilEffect(dt);
             HandleRecoilReturn(dt);
-            if (ShouldManageAiFormationUsage())
-                HandleAITeamUsage(dt);
-        }
-
-        private bool ShouldManageAiFormationUsage()
-        {
-            Mission? mission = Mission.Current;
-            return mission == null || !mission.IsSiegeBattle;
+            HandleAITeamUsage(dt);
         }
 
         private bool IsPushInProgress() => _cycleState == CannonCycleState.Push;

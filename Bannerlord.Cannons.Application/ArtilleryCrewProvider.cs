@@ -1,4 +1,5 @@
-﻿using TaleWorlds.MountAndBlade;
+﻿using TaleWorlds.Core;
+using TaleWorlds.MountAndBlade;
 
 namespace Bannerlord.Cannons;
 
@@ -11,6 +12,6 @@ public class ArtilleryCrewProvider : IArtilleryCrewProvider
 
     public bool IsArtilleryCrew(Agent agent)
     {
-        return true;
+        return agent.IsPlayerControlled || agent.Formation?.FormationIndex == FormationClass.Bodyguard;
     }
 }
