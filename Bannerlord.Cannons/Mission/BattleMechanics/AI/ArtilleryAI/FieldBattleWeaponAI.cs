@@ -17,7 +17,8 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
     ///   <item><description>
     ///     <b>No target</b> (<see cref="TickWithoutTarget"/>): polls the target selectors
     ///     every <see cref="FindTargetInterval"/> seconds. Siege weapons are tried first;
-    ///     infantry formations are the fallback.
+    ///     otherwise the formation and mob selectors compete on score, with the mob
+    ///     selector winning ties.
     ///   </description></item>
     ///   <item><description>
     ///     <b>Has target</b> (<see cref="TickWithTarget"/>): updates the lead position,
@@ -40,6 +41,7 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
         private readonly BaseFieldSiegeWeapon _weapon;
         private readonly ITargetSelector _siegeWeaponSelector;
         private readonly ITargetSelector _formationSelector;
+        private readonly ITargetSelector _mobSelector;
         private readonly ILogger _logger;
         private Target? _target;
         private Timer _findTargetTimer;
@@ -53,7 +55,8 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
             if (loggerFactory == null) throw new System.ArgumentNullException(nameof(loggerFactory));
         
             _siegeWeaponSelector = new SiegeWeaponTargetSelector(weapon, loggerFactory);
-            _formationSelector   = new MobTargetSelector(weapon);
+            _formationSelector   = new FormationTargetSelector(weapon, loggerFactory);
+            _mobSelector         = new MobTargetSelector(weapon);
             _logger = loggerFactory.CreateLogger<FieldBattleWeaponAI>();
             _findTargetTimer     = new Timer(Mission.Current.CurrentTime, FindTargetInterval);
         }
@@ -157,7 +160,12 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
         /// <summary>
         /// Called each tick while no target is held. Clears any stale weapon target and
         /// polls the selectors every <see cref="FindTargetInterval"/> seconds.
-        /// Siege weapons have absolute priority; formations are the fallback.
+        ///
+        /// Siege weapons keep absolute priority. Below them the formation and mob
+        /// selectors compete on their utility score, and the mob target wins a tie:
+        /// both are capped at <see cref="ArtilleryAIConstants.FormationUtilityCap"/>, so
+        /// equal scores are common and the mob aim point is the one already proven
+        /// against a live agent.
         /// </summary>
         private void TickWithoutTarget()
         {
@@ -174,8 +182,12 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
             }
 
             Target? formationTarget = _formationSelector.FindBestTarget();
-            if (formationTarget != null)
+            Target? mobTarget       = _mobSelector.FindBestTarget();
+
+            if (formationTarget != null && (mobTarget == null || formationTarget.UtilityValue > mobTarget.UtilityValue))
                 TrySetSelectedTarget(formationTarget, "Formation");
+            else if (mobTarget != null)
+                TrySetSelectedTarget(mobTarget, "Mob");
         }
 
         private void TrySetSelectedTarget(Target target, string targetKind)

@@ -103,8 +103,14 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
             => (entity.GlobalBoxMax + entity.GlobalBoxMin) * 0.5f;
 
         /// <summary>
-        /// Enumerates active enemy siege weapons. Destroyed weapons (checked via
-        /// <see cref="DestructableComponent"/>) are excluded.
+        /// Enumerates active enemy siege weapons.
+        ///
+        /// <see cref="SiegeWeapon.IsDeactivated"/> subsumes destroyed, disabled and
+        /// invalid-entity weapons, and each weapon type overrides it to also mean
+        /// "this engine has finished its job": a battering ram reports deactivated
+        /// once it has arrived at its gate and that gate is open or destroyed, so a
+        /// spent ram stops being a target. Mirrors the filter vanilla artillery uses
+        /// in RangedSiegeWeaponAi.ThreatSeeker.GetAllThreats.
         /// </summary>
         private IEnumerable<SiegeWeapon> GetEnemySiegeWeapons()
         {
@@ -113,7 +119,7 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
                 .Where(sw => sw.Side != BattleSideEnum.None
                     && sw.Side != _weapon.Side
                     && sw is not SiegeLadder
-                    && (sw.DestructionComponent == null || !sw.DestructionComponent.IsDestroyed));
+                    && !sw.IsDeactivated);
         }
     }
 }
