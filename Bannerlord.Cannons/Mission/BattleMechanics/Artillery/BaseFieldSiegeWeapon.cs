@@ -108,10 +108,31 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             return angle;
         }
 
+        /// <summary>
+        /// The base call is what makes <see cref="EnemyRangeToStopUsing"/> mean anything: it
+        /// releases the crew, and SiegeWeapon.HasToBeDefendedByUser turns that into a Defend
+        /// order so they fight instead of dying at the gun. It clears on its own once the
+        /// enemy leaves.
+        /// </summary>
         public override bool IsDisabledForBattleSideAI(BattleSideEnum sideEnum)
         {
-            return sideEnum != Side;
+            return sideEnum != Side || base.IsDisabledForBattleSideAI(sideEnum);
         }
+
+        /// <summary>
+        /// True once the ammo reserve is spent. Kept out of
+        /// <see cref="IsDisabledForBattleSideAI"/>, which would evict the crew on the spot and
+        /// throw away the round already in the barrel; vanilla releases the pilot itself at the
+        /// LoadingAmmo step, after that last round is fired.
+        /// </summary>
+        public bool IsOutOfAmmo => !HasAmmo;
+
+        /// <summary>
+        /// True once the last round has left the barrel and the weapon is asking for a reload it
+        /// can never get. That is the point vanilla itself treats the gun as finished, so it is
+        /// the safe moment to stop asking for crew and to hand back the men still on it.
+        /// </summary>
+        public bool IsSpent => IsOutOfAmmo && State == WeaponState.LoadingAmmo;
 
         public void ApplyConfiguredStartingAmmo()
         {

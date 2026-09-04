@@ -427,8 +427,12 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         public override SiegeEngineType GetSiegeEngineType() => Side != BattleSideEnum.Attacker ? DefaultSiegeEngineTypes.Catapult : DefaultSiegeEngineTypes.Onager;
 
         // Cannons crew via external ammo-pickup standing points (like the vanilla Mangonel),
-        // not the default pilot-only detachment scoring.
-        protected override float GetDetachmentWeightAux(BattleSideEnum side) => GetDetachmentWeightAuxForExternalAmmoWeapons(side);
+        // not the default pilot-only detachment scoring. That scoring never looks at ammo, and the
+        // vanilla latch that would (IsDisabledForAI, set at the LoadingAmmo step) only trips while a
+        // crewman happens to hold a can_pick_up_ammo point, of which these cannons have exactly one.
+        // Without this guard a finished gun keeps advertising seats and drains crew from live guns.
+        protected override float GetDetachmentWeightAux(BattleSideEnum side)
+            => IsSpent ? float.MinValue : GetDetachmentWeightAuxForExternalAmmoWeapons(side);
 
         public override TargetFlags GetTargetFlags()
         {
