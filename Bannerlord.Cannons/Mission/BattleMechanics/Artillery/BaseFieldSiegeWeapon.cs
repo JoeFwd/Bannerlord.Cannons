@@ -315,6 +315,22 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             => TryGetWorldUpAim(target, out float targetDirection, out _)
                && IsDirectionWithinRestriction(targetDirection);
 
+        internal bool IsReleaseAngleWithinRestrictions(float releaseAngle)
+            => IsReleaseAngleWithinRestrictions(
+                releaseAngle,
+                BottomReleaseAngleRestriction,
+                TopReleaseAngleRestriction);
+
+        internal static bool IsReleaseAngleWithinRestrictions(
+            float releaseAngle,
+            float bottomReleaseAngleRestriction,
+            float topReleaseAngleRestriction)
+            => !float.IsNaN(releaseAngle)
+               && !float.IsInfinity(releaseAngle)
+               && releaseAngle >= bottomReleaseAngleRestriction
+               && releaseAngle <= topReleaseAngleRestriction
+               && releaseAngle <= MathF.PI / 2f;
+
         /// <summary>
         /// Aims at <paramref name="target"/> using world-up axis angle calculation — equivalent
         /// to v1.2's <c>AimAtThreat</c> — so the computed direction is consistent with
@@ -338,7 +354,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             targetDirection = 0f;
             MatrixFrame globalFrame = GameEntity.GetGlobalFrame();
             releaseAngle = GetTargetReleaseAngle(target);
-            if (float.IsNaN(releaseAngle) || float.IsInfinity(releaseAngle) || releaseAngle > MathF.PI / 2f)
+            if (!IsReleaseAngleWithinRestrictions(releaseAngle))
                 return false;
 
             globalFrame.rotation.RotateAboutUp(MathF.PI);

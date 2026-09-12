@@ -54,8 +54,9 @@ namespace Bannerlord.Cannons.Integration.Mission.Battle.Patches
             {
                 Vec3 pos = fieldSiegeWeapon.Target.SelectedWorldPosition;
                 if (pos == Vec3.Zero) return false;
-                fieldSiegeWeapon.GetTargetReleaseAngle(pos, out direction);
-                return direction != Vec3.Zero;
+                float releaseAngle = fieldSiegeWeapon.GetTargetReleaseAngle(pos, out direction);
+                return direction != Vec3.Zero
+                       && fieldSiegeWeapon.IsReleaseAngleWithinRestrictions(releaseAngle);
             }
 
             // Siege AI: native RangedSiegeWeaponAi populates LastAiLaunchVector via AimAtThreat
