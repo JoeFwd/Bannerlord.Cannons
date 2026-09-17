@@ -14,6 +14,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         protected IBallisticsService _ballisticsService;
         protected IFireSafetyChecker _fireSafetyChecker;
         protected AmmoLimit _ammoLimitEnforcer;
+        protected IAmmoPileColliderActivator _ammoPileColliderActivator;
         protected StandingPoint? ActiveAmmoPickupPoint { get; private set; }
         private Vec3 MissleStartingPositionForSimulation => MissileStartingPositionEntityForSimulation?.GlobalPosition ?? Vec3.Zero;
         private readonly ResolveActivePickupPointUseCase _resolveUseCase = new();
@@ -46,13 +47,15 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             _ballisticsService = _ballisticsService ?? new BallisticsService();
             _fireSafetyChecker = _fireSafetyChecker ?? new FireSafetyChecker();
             _ammoLimitEnforcer = _ammoLimitEnforcer ?? new AmmoLimit(OnAmmoConsumed);
+            _ammoPileColliderActivator = _ammoPileColliderActivator ?? new AmmoPileColliderActivator(GetPileEntity);
         }
 
         private void EnsureComponentsInitialised()
         {
             if (_ballisticsService == null
                 || _fireSafetyChecker == null
-                || _ammoLimitEnforcer == null)
+                || _ammoLimitEnforcer == null
+                || _ammoPileColliderActivator == null)
             {
                 InitialiseComponents();
             }
@@ -225,6 +228,29 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
         }
 
         private bool IsAmmoMeshReady => AmmoPickUpPoints != null && AmmoPickUpPoints.Count > 0;
+
+        /// <summary>
+        /// Vanilla drives the pile through the pile material's <c>stone_pile_deformer</c> shader:
+        /// <see cref="RangedSiegeWeapon.UpdateAmmoMesh"/> feeds it the spent-round count, and the
+        /// shader culls that many balls by their vertex-colour alpha. The base call does that;
+        /// this additionally takes the pile's collider away once the last round is gone, which
+        /// vanilla leaves standing.
+        /// </summary>
+        protected override void UpdateAmmoMesh()
+        {
+            base.UpdateAmmoMesh();
+            EnsureComponentsInitialised();
+            _ammoPileColliderActivator.SetActive(AmmoCount > 0);
+        }
+
+        private TaleWorlds.Engine.GameEntity? GetPileEntity()
+        {
+            if (!IsAmmoMeshReady)
+                return null;
+
+            var weakPile = AmmoPickUpPoints[0].GameEntity.Parent;
+            return weakPile.IsValid ? TaleWorlds.Engine.GameEntity.CreateFromWeakEntity(weakPile) : null;
+        }
 
         private static AmmoWeaponState ToAmmoWeaponState(WeaponState state)
             => state == WeaponState.LoadingAmmo
