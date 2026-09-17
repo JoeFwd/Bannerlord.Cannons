@@ -60,6 +60,23 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery.Components
                     }
                 }
             }
+            else if (loadAmmoPoint.HasAIMovingTo)
+            {
+                // An agent that lost its cannonball on the way here can never seat: the load point
+                // is a StandingPointWithWeaponRequirement, so IsDisabledForAgent refuses anyone not
+                // carrying the projectile. Left alone the point stays latched as HasAIMovingTo for
+                // the rest of the battle, which also stops it being offered to anyone else, and the
+                // cannon sits in LoadingAmmo forever. Vanilla's trebuchet releases the mover for the
+                // same reason; StopUsingGameObject clears the move latch so it can go for ammo again.
+                Agent movingAgent = loadAmmoPoint.MovingAgent;
+                EquipmentIndex movingWieldedItemIndex = movingAgent.GetPrimaryWieldedItemIndex();
+                if (movingWieldedItemIndex == EquipmentIndex.None ||
+                    movingAgent.Equipment[movingWieldedItemIndex].CurrentUsageItem.WeaponClass !=
+                    originalMissileItem.PrimaryWeapon.WeaponClass)
+                {
+                    movingAgent.StopUsingGameObject(true, Agent.StopUsingGameObjectFlags.None);
+                }
+            }
 
             return false;
         }
