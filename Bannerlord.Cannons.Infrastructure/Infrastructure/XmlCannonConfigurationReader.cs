@@ -156,6 +156,7 @@ namespace Bannerlord.Cannons.Infrastructure
                 element.Element("CampaignMapProjectilePrefabName")?.Value ?? throw new InvalidOperationException($"CampaignMapProjectilePrefabName is required for cannon '{id}'"),
                 element.Element("CampaignMapReloadAnimationName")?.Value ?? throw new InvalidOperationException($"CampaignMapReloadAnimationName is required for cannon '{id}'"),
                 element.Element("CampaignMapFireAnimationName")?.Value ?? throw new InvalidOperationException($"CampaignMapFireAnimationName is required for cannon '{id}'"),
+                element.Element("CampaignMapFireSoundId")?.Value ?? throw new InvalidOperationException($"CampaignMapFireSoundId is required for cannon '{id}'"),
                 machineType,
                 boneIndex,
                 isDefensiveSiegeWeapon,

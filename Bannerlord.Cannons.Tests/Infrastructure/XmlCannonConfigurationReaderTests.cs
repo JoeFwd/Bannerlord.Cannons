@@ -36,10 +36,24 @@ public class XmlCannonConfigurationReaderTests : IDisposable
         var cannon = cannons.First();
         Assert.Equal("test_cannon", cannon.Id);
         Assert.Equal("Test Cannon", cannon.DisplayName);
+        Assert.Equal("test_campaign_fire", cannon.CampaignMapFireSoundId);
         Assert.Equal(1, cannon.MachineType);
         Assert.Equal(0, cannon.CampaignMapProjectileBoneIndex);
         Assert.True(cannon.IsDefensiveSiegeWeapon);
         Assert.True(cannon.IsAttackerSiegeWeapon);
+    }
+
+    [Fact]
+    public void LoadCannons_WithoutCampaignMapFireSoundId_ReturnsNoCannons()
+    {
+        var xml = CreateValidCannonXml()
+            .Replace("    <CampaignMapFireSoundId>test_campaign_fire</CampaignMapFireSoundId>\r\n", string.Empty)
+            .Replace("    <CampaignMapFireSoundId>test_campaign_fire</CampaignMapFireSoundId>\n", string.Empty);
+        File.WriteAllText(_testXmlPath, xml);
+
+        var reader = new XmlCannonConfigurationReader(_loggerFactory, new FakeCannonConfigurationPathProvider(_testXmlPath));
+
+        Assert.Empty(reader.LoadCannons());
     }
 
     [Fact]
@@ -140,6 +154,7 @@ public class XmlCannonConfigurationReaderTests : IDisposable
     <CampaignMapProjectilePrefabName>test_projectile</CampaignMapProjectilePrefabName>
     <CampaignMapReloadAnimationName>test_reload</CampaignMapReloadAnimationName>
     <CampaignMapFireAnimationName>test_fire</CampaignMapFireAnimationName>
+    <CampaignMapFireSoundId>test_campaign_fire</CampaignMapFireSoundId>
     <MachineType>1</MachineType>
     <CampaignMapProjectileBoneIndex>0</CampaignMapProjectileBoneIndex>
     <IsDefensiveSiegeWeapon>true</IsDefensiveSiegeWeapon>
@@ -182,6 +197,7 @@ public class XmlCannonConfigurationReaderTests : IDisposable
                     element.Element("CampaignMapProjectilePrefabName")?.Value ?? throw new InvalidOperationException($"CampaignMapProjectilePrefabName is required"),
                     element.Element("CampaignMapReloadAnimationName")?.Value ?? throw new InvalidOperationException($"CampaignMapReloadAnimationName is required"),
                     element.Element("CampaignMapFireAnimationName")?.Value ?? throw new InvalidOperationException($"CampaignMapFireAnimationName is required"),
+                    element.Element("CampaignMapFireSoundId")?.Value ?? throw new InvalidOperationException($"CampaignMapFireSoundId is required"),
                     machineType,
                     boneIndex,
                     IsDefensiveSiegeWeapon,

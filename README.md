@@ -62,6 +62,7 @@ Client modules register cannons by shipping a `ModuleData/CustomXml/cannons.xml`
     <CampaignMapProjectilePrefabName>campaign_cannonball</CampaignMapProjectilePrefabName>
     <CampaignMapReloadAnimationName>reload</CampaignMapReloadAnimationName>
     <CampaignMapFireAnimationName>fire</CampaignMapFireAnimationName>
+    <CampaignMapFireSoundId>campaign_cannon_fire</CampaignMapFireSoundId>
     <MachineType>1</MachineType>
     <CampaignMapProjectileBoneIndex>0</CampaignMapProjectileBoneIndex>
     <IsDefensiveSiegeWeapon>true</IsDefensiveSiegeWeapon>
@@ -85,10 +86,22 @@ All properties are required. If a property is missing, empty, or invalid, the ca
 | `CampaignMapProjectilePrefabName` | string | Campaign map projectile prefab used by siege bombardment visualization. Returned from `GetSiegeEngineMapProjectilePrefabName(...)`. |
 | `CampaignMapReloadAnimationName` | string | Animation name used by the campaign map siege engine prefab while reloading. Returned from `GetSiegeEngineMapReloadAnimationName(...)`. |
 | `CampaignMapFireAnimationName` | string | Animation name used by the campaign map siege engine prefab while firing. Returned from `GetSiegeEngineMapFireAnimationName(...)`. |
+| `CampaignMapFireSoundId` | string | Module sound event id played when this cannon fires on the campaign map. Use a short-range, non-persistent one-shot category such as `mission_foley`; do not use persistent `campaign_node` or long-range `mission_siege_loud`. |
 | `MachineType` | int | Positive integer used as the campaign map UI machine-type discriminator for this cannon. Native Bannerlord uses fixed values for built-in siege engines; Bannerlord.Cannons patches the map-siege VM and widgets so this custom value can map back to `MapSiegeMarkerSpriteId`. Use a value that does not collide with native machine types or other custom cannons. |
 | `CampaignMapProjectileBoneIndex` | int | Non-negative bone index on the campaign map siege engine prefab where the projectile should originate. Returned as an `sbyte` from `GetSiegeEngineMapProjectileBoneIndex(...)`. |
 | `IsDefensiveSiegeWeapon` | bool | When `true`, the cannon is added to `GetAvailableDefenderSiegeEngines(...)` and can be selected by defenders on the campaign map. |
 | `IsAttackerSiegeWeapon` | bool | When `true`, the cannon is added to `GetAvailableAttackerRangedSiegeEngines(...)` and can be selected by attackers on the campaign map. |
+
+Register the referenced sound as a one-shot module sound. For example:
+
+```xml
+<module_sound name="campaign_cannon_fire" sound_category="mission_foley">
+  <variation path="../ModuleSounds/Cannon/cannon_fire_1.ogg" weight="1.0"/>
+  <variation path="../ModuleSounds/Cannon/cannon_fire_2.ogg" weight="1.0"/>
+</module_sound>
+```
+
+`campaign_node` is not suitable here: Bannerlord treats that category as persistent, so each shot would create another sound instance that continues during campaign pause and after leaving the campaign. `mission_siege_loud` is also a poor campaign-map default because its audible range is intended for mission-scale siege effects.
 
 ---
 

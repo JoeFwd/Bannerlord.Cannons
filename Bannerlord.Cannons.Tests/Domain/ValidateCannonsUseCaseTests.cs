@@ -46,6 +46,7 @@ namespace Bannerlord.Cannons.Tests.Domain
             "cannonball_mapicon_projectile",
             "ballista_a_mapicon_reload",
             "ballista_a_mapicon_fire",
+            "campaign_cannon_fire",
             8,
             0,
             true,
@@ -182,6 +183,19 @@ namespace Bannerlord.Cannons.Tests.Domain
 
             Assert.Empty(result);
             Assert.Equal("Cannon 'cannon_a' is invalid: CampaignMapFireAnimationName is null or empty. Cannon will be skipped.", loggerFactory.Logger.WarnMessages[0]);
+        }
+
+        [Fact]
+        public void GetValidCannons_EmptyCampaignMapFireSoundId_FiltersOutAndLogs()
+        {
+            var loggerFactory = new FakeLoggerFactory();
+            var useCase = new ValidateCannonsUseCase(loggerFactory);
+            var cannon = ValidCannon() with { CampaignMapFireSoundId = "" };
+
+            var result = useCase.GetValidCannons(new[] { cannon }).ToList();
+
+            Assert.Empty(result);
+            Assert.Equal("Cannon 'cannon_a' is invalid: CampaignMapFireSoundId is null or empty. Cannon will be skipped.", loggerFactory.Logger.WarnMessages[0]);
         }
 
         [Fact]

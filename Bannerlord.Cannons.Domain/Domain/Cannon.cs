@@ -10,6 +10,7 @@ public record Cannon(
         string CampaignMapProjectilePrefabName,
     string CampaignMapReloadAnimationName,
     string CampaignMapFireAnimationName,
+    string CampaignMapFireSoundId,
     int MachineType,
     int CampaignMapProjectileBoneIndex,
     bool IsDefensiveSiegeWeapon,

@@ -79,6 +79,12 @@ namespace Bannerlord.Cannons.Domain
                 return false;
             }
 
+            if (string.IsNullOrWhiteSpace(cannon.CampaignMapFireSoundId))
+            {
+                _logger.LogWarning($"Cannon '{cannon.Id}' is invalid: CampaignMapFireSoundId is null or empty. Cannon will be skipped.");
+                return false;
+            }
+
             if (cannon.MachineType <= 0)
             {
                 _logger.LogWarning($"Cannon '{cannon.Id}' is invalid: MachineType must be greater than 0 (got {cannon.MachineType}). Cannon will be skipped.");

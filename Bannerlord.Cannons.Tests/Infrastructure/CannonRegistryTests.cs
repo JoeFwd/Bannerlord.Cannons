@@ -123,6 +123,7 @@ public class CannonRegistryTests
             "test_projectile",
             "test_reload",
             "test_fire",
+            "test_campaign_fire",
             1,
             0,
             true,

@@ -8,6 +8,7 @@ using Bannerlord.Cannons.Infrastructure.DependencyInjection;
 using System.Reflection;
 using Harmony.DependencyInjection;
 using Harmony.DependencyInjection.Patches;
+using Bannerlord.Cannons.Integration.Campaign;
 using Bannerlord.Cannons.Integration.Campaign.Patches;
 using Bannerlord.Cannons.Integration.Mission.Battle.Patches;
 using Bannerlord.Cannons.Integration.UI;
@@ -35,10 +36,14 @@ public class CannonsServiceContainer
         services.AddHarmonyPatching();
 
         services.AddSingleton<IBannerlordSpriteRepository, BannerlordSpriteRepository>();
+        services.AddSingleton<CannonFireSoundProvider>();
+        services.AddSingleton<PendingCannonFireSound>();
 
         services.AddSingleton<IPatch, CampaignMapSiegePrefabEntityCacheGetScalePatch>();
         services.AddSingleton<IPatch, CampaignMapSiegePrefabEntityCacheGetLaunchFramePatch>();
         services.AddSingleton<IPatch, CampaignMapSiegePrefabEntityCacheOnInitPatch>();
+        services.AddSingleton<IPatch, SettlementVisualCalculateDataAndDurationsForSiegeMachinePatch>();
+        services.AddSingleton<IPatch, MBSoundEventPlaySoundPatch>();
         services.AddSingleton<IPatch, ArtilleryShootProjectileAuxPatch>();
         services.AddSingleton<IPatch, ArtilleryOnDeploymentFinishedPatch>();
         services.AddSingleton<IPatch, ArtilleryGetAirFrictionConstantPatch>();
