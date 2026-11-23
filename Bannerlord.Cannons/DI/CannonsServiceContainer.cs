@@ -52,7 +52,7 @@ public class CannonsServiceContainer
         services.AddSingleton<IPatch, MapSiegePOIVMPatch>();
         services.AddSingleton<IPatch, MissionSiegeEngineMarkerWidgetPatch>();
         services.AddSingleton<IPatch, OrderSiegeMachineItemButtonWidgetPatch>();
-        services.AddSingleton<IPatch, OrderSiegeMachineVM_GetSiegeTypePatch>();
+        services.AddSingleton<IPatch, DeploymentSiegeMachineVM_GetSiegeEngineTypePatch>();
 
         services.AddSingleton<ValidateCannonsUseCase>();
         services.AddSingleton<CannonRegistryBootstrapper>();

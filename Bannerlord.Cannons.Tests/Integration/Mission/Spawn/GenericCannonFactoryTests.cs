@@ -100,7 +100,7 @@ public class GenericCannonFactoryTests
             // Constructor that requires parameters
         }
 
-        public override TextObject GetDescriptionText(WeakGameEntity gameEntity = default)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity = default, Agent requesterAgent = null)
         {
             return new TextObject(string.Empty);
         }

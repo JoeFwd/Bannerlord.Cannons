@@ -9,20 +9,20 @@ using TaleWorlds.ObjectSystem;
 
 namespace Bannerlord.Cannons.Integration.UI.Patches
 {
-    public class OrderSiegeMachineVM_GetSiegeTypePatch : IPatch
+    public class DeploymentSiegeMachineVM_GetSiegeEngineTypePatch : IPatch
     {
         private static ICannonRegistry _registry = null!;
 
-        public OrderSiegeMachineVM_GetSiegeTypePatch(ICannonRegistry registry)
+        public DeploymentSiegeMachineVM_GetSiegeEngineTypePatch(ICannonRegistry registry)
         {
             _registry = registry;
         }
 
         public MethodInfo TargetMethod =>
-            AccessTools.Method(typeof(OrderSiegeMachineVM), nameof(OrderSiegeMachineVM.GetSiegeType));
+            AccessTools.Method(typeof(DeploymentSiegeMachineVM), "GetSiegeEngineType");
 
         public MethodInfo PatchMethod =>
-            AccessTools.Method(typeof(OrderSiegeMachineVM_GetSiegeTypePatch), nameof(Postfix));
+            AccessTools.Method(typeof(DeploymentSiegeMachineVM_GetSiegeEngineTypePatch), nameof(Postfix));
 
         public PatchType PatchType => PatchType.Postfix;
 

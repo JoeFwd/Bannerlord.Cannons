@@ -13,14 +13,14 @@ namespace Bannerlord.Cannons.BattleMechanics.AI.ArtilleryAI
         public FieldSiegeWeaponAI(RangedSiegeWeapon weapon) : base(weapon)
         {
             // v1.4 moved the ThreatSeeker's target-list initialisation out of its
-            // constructor into InitializeTargetableObjects(), which the engine only
+            // constructor into ResetTargetableObjects() (InitializeTargetableObjects() before 1.5), which the engine only
             // invokes via RangedSiegeWeapon.OnDeploymentFinished. Cannons spawned
             // dynamically (i.e. not present when the deployment phase ends) never
             // receive that call, leaving _potentialTargetObjects null so the AI can
             // never acquire a target. Initialise it here so target acquisition works
             // regardless of when the cannon enters the mission. (No-op-safe if the
             // engine later re-initialises it at OnDeploymentFinished.)
-            InitializeThreatSeeker();
+            ResetThreatSeeker();
         }
     }
 }

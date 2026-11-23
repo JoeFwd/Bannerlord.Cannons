@@ -12,7 +12,7 @@ namespace Bannerlord.Cannons.BattleMechanics.Artillery
             return new TextObject("{=!}Pick up a cannonball");
         }
 
-        public override TextObject GetDescriptionText(WeakGameEntity gameEntity)
+        public override TextObject GetDescriptionText(WeakGameEntity gameEntity, Agent requesterAgent)
         {
             return new TextObject("{=!}Cannonball Pile");
         }
